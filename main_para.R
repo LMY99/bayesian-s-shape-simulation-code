@@ -158,7 +158,7 @@ for(t in seq_along(ages)){
 }
 }
 
-est <- apply(points,1,function(x) c(mean(x),HDInterval::hdi(x)))
+est <- apply(points,1,function(x) c(mean(x),HDInterval::hdi(x,0.75)))
 var_est <- apply(points,1,var)
 est <- data.frame(t(est))
 colnames(est) <- c("avg","lower","upper")
@@ -169,7 +169,7 @@ est$bias2 <- (est$avg - est$truth)^2
 est$var <- var_est
 
 Q50s <- stan.array$lpos
-Q50[di,1:2] <- HDInterval::hdi(Q50s)
+Q50[di,1:2] <- HDInterval::hdi(Q50s,0.75)
 Q50[di,3] <- mean(Q50s)
 true_Q50[di] <- b0
 Q50[di,5] <- (Q50[di,3] - true_Q50[di])^2
@@ -180,7 +180,7 @@ CI_repeat[di,,] <- as.matrix(est)
 #coef_repeat[di,,] <- t(coefs[,1,indice])
 
 CI_covariate_repeat[di,,1:3] <- t(apply(stan.array$beta[,1,],2,
-                                        function(x) c(mean(x),HDInterval::hdi(x))))
+                                        function(x) c(mean(x),HDInterval::hdi(x,0.75))))
 CI_covariate_repeat[di,,4] <- c(0.4,-0.5,0.1)
 CI_covariate_repeat[di,,7] <- t(apply(stan.array$beta[,1,],2,var))
 CI_covariate_repeat[di,,6] <- (CI_covariate_repeat[di,,1]-CI_covariate_repeat[di,,4])^2
@@ -189,7 +189,7 @@ CI_covariate_repeat[di,,5] <- CI_covariate_repeat[di,,6] + CI_covariate_repeat[d
 #coef_repeat_flex[di,,] <- t(coefs[,1,indice])
 
 RE_repeat[di,,1:3] <- t(apply(stan.array$randomint[,1,],2,
-                              function(x) c(mean(x),HDInterval::hdi(x))))
+                              function(x) c(mean(x),HDInterval::hdi(x,0.75))))
 RE_repeat[di,,4] <- truthRE[,1]
 RE_repeat[di,,7] <- t(apply(stan.array$randomint[,1,],2,var))
 RE_repeat[di,,6] <- (RE_repeat[di,,1]-RE_repeat[di,,4])^2
@@ -201,20 +201,20 @@ for(j in 1:(R/2)){
 }
 
 offset_repeat[di,,1:3] <- t(apply(offsets,2,
-                                  function(x) c(mean(x),HDInterval::hdi(x))))
+                                  function(x) c(mean(x),HDInterval::hdi(x,0.75))))
 offset_repeat[di,,4] <- truthRE[,1] + 0.4
 offset_repeat[di,,7] <- t(apply(offsets,2,var))
 offset_repeat[di,,6] <- (offset_repeat[di,,1]-offset_repeat[di,,4])^2
 offset_repeat[di,,5] <- offset_repeat[di,,6] + offset_repeat[di,,7]
 
 sigmay_repeat[di,1] <- mean(stan.array$sigmaerror)
-sigmay_repeat[di,2:3] <- HDInterval::hdi(stan.array$sigmaerror)
+sigmay_repeat[di,2:3] <- HDInterval::hdi(stan.array$sigmaerror,0.75)
 sigmay_repeat[di,4] <- residual_var
 sigmay_repeat[di,6:7] <- c((sigmay_repeat[di,1]-sigmay_repeat[di,4])^2,
                            var(stan.array$sigmaerror))
 sigmay_repeat[di,5] <- sum(sigmay_repeat[di,6:7])
 sigmaw_repeat[di,1] <- mean(stan.array$sigmarandom)
-sigmaw_repeat[di,2:3] <- HDInterval::hdi(stan.array$sigmarandom)
+sigmaw_repeat[di,2:3] <- HDInterval::hdi(stan.array$sigmarandom,0.75)
 sigmaw_repeat[di,4] <- random_effect_var
 sigmaw_repeat[di,6:7] <- c((sigmaw_repeat[di,1]-sigmaw_repeat[di,4])^2,
                            var(stan.array$sigmarandom))
@@ -222,16 +222,16 @@ sigmaw_repeat[di,5] <- sum(sigmaw_repeat[di,6:7])
 
 true_turning[di] <- 70
 turning[di,1:3] <- c(mean(stan.array$lpos),
-                  HDInterval::hdi(stan.array$lpos))
+                  HDInterval::hdi(stan.array$lpos,0.75))
 turning[di,5] <- (turning[di,1] - true_turning[di])^2
 turning[di,6] <- var(stan.array$lpos)
 turning[di,4] <- sum(turning[di,5:6])
 true_amp[di] <- 2
 amp[di,] <- c(mean(stan.array$lamp),
-              HDInterval::hdi(stan.array$lamp))
+              HDInterval::hdi(stan.array$lamp,0.75))
 true_scales[di] <- 5
 scales[di,] <- c(mean(stan.array$lscale),
-              HDInterval::hdi(stan.array$lscale))
+              HDInterval::hdi(stan.array$lscale,0.75))
 }
 
 save(CI_repeat,turning,true_turning,CI_covariate_repeat,RE_repeat,offset_repeat,
