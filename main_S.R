@@ -302,7 +302,7 @@ inflects <- apply(points, 2, function(x){
   ages[max(which(diff(x,differences=2)>0))+1]
 })
 
-turning[di,1:2] <- HDInterval::hdi(inflects)
+turning[di,1:2] <- HDInterval::hdi(inflects,0.75)
 turning[di,3] <- mean(inflects)
 true_turning[di] <- ages[max(which(diff(est$truth,differences=2)>0))+1]
 turning[di,5] <- (turning[di,3] - true_turning[di])^2
@@ -312,7 +312,7 @@ turning[di,4] <- sum(turning[di,5:6])
 Q50s <- apply(points, 2, function(x){
   ages[min(which(x>=max(x)/2))]
 })
-Q50[di,1:2] <- HDInterval::hdi(Q50s)
+Q50[di,1:2] <- HDInterval::hdi(Q50s,0.75)
 Q50[di,3] <- mean(Q50s)
 true_Q50[di] <- 69.31112
 Q50[di,5] <- (Q50[di,3] - true_Q50[di])^2

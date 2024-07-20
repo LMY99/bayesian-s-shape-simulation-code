@@ -324,14 +324,14 @@ offset_repeat[di,,6] <- (offset_repeat[di,,1]-offset_repeat[di,,4])^2
 offset_repeat[di,,5] <- offset_repeat[di,,6] + offset_repeat[di,,7]
 
 sigmay_repeat[di,1] <- mean(sigmays[indice])
-sigmay_repeat[di,2:3] <- coda::HPDinterval(coda::as.mcmc(sigmays[indice]))
+sigmay_repeat[di,2:3] <- coda::HPDinterval(coda::as.mcmc(sigmays[indice]),0.75)
 sigmay_repeat[di,4] <- residual_var
 sigmay_repeat[di,6:7] <- c((sigmay_repeat[di,1]-sigmay_repeat[di,4])^2,
                            var(sigmays[indice]))
 sigmay_repeat[di,5] <- sum(sigmay_repeat[di,6:7])
                            
 sigmaw_repeat[di,1] <- mean(sigmaws[indice])
-sigmaw_repeat[di,2:3] <- coda::HPDinterval(coda::as.mcmc(sigmaws[indice]))
+sigmaw_repeat[di,2:3] <- coda::HPDinterval(coda::as.mcmc(sigmaws[indice]),0.75)
 sigmaw_repeat[di,4] <- random_effect_var
 sigmaw_repeat[di,6:7] <- c((sigmaw_repeat[di,1]-sigmaw_repeat[di,4])^2,
                            var(sigmaws[indice]))
