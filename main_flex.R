@@ -210,8 +210,8 @@ lpd <- function(s)
 ls <- -2 # Log of Jump Standard Deviation
 acc <- 0 # Accepted Proposals in one batch
 lss <- ls # Sequence of LS for reference
-w <- planck_taper(ncol(B), eps=0.1) # Window Function
-#w <- rep(1,ncol(B))
+#w <- planck_taper(ncol(B), eps=0.1) # Window Function
+w <- rep(1,ncol(B))
 #w <- NULL
 # Perform MCMC ----------------------------------------------------
 time0 <- proc.time()
