@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-
+module load R/4.3
 for seed in {001..100}; do
   if ! test -f "flex_CIs_${seed}.rda"; then
     sbatch --export="seed=${seed}" -J "flexL${seed}" --time=7-00:00:00 run_flex.sh
