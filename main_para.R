@@ -157,7 +157,7 @@ for(t in seq_along(ages)){
   points[t,] <- plogis((ages[t] - stan.array$lpos[,j])/stan.array$lscale[,j])*stan.array$lamp[,j]
 }
 }
-ci_level <- 0.75
+ci_level <- 0.95
 est <- apply(points,1,function(x) c(mean(x),quantile(x,c(0.5-ci_level/2,0.5+ci_level/2))))
 var_est <- apply(points,1,var)
 est <- data.frame(t(est))
