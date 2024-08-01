@@ -277,7 +277,7 @@ for(i in 1:R){
   offsets[,k,i] <- REs[,k,i] + coefs[1,k,i]
   }
 }
-ci_level <- 0.95
+ci_level <- 0.75
 ages <- seq(0,120,by=0.1)
 points <- array(0,c(length(ages),R-Burnin))
 
