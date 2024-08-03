@@ -137,7 +137,7 @@ for(i in 1:K){
   #B <- iSpline(t, knots=knot.list[[i]], Boundary.knots = boundary.knot, 
   #             degree=2, intercept=TRUE) # IBSpline Basis
   #B <- B/min(apply(B,2,max))
-  B <- B[,(3):(ncol(B)-2)]
+  #B <- B[,(3):(ncol(B)-2)]
   covar.list[[i]] <- cbind(X,B)
 }
 
