@@ -274,7 +274,7 @@ indice <- (Burnin+1):R
 spline.basis <- splines2::ibs(pmin(pmax(ages,min(boundary.knot)),max(boundary.knot)), 
                               knots=knot.list[[1]], Boundary.knots = boundary.knot, 
                               degree=2, intercept=TRUE)
-spline.basis <- spline.basis[,3:(dfi-2)]
+#spline.basis <- spline.basis[,3:(dfi-2)]
 points <- spline.basis %*% coefs[-(1:nX),1,indice]
 est <- apply(points,1,function(x) c(mean(x),
                                     quantile(x,c(0.5-ci_level/2,0.5+ci_level/2))))
