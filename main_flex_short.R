@@ -205,8 +205,8 @@ sigmaws[] <- random_effect_var
 
 # Prior density for penalties
 lpd <- function(s) 
-  log(2)+dnorm(s[1], sd=1/(dfi-4), log=TRUE) +
-  log(2)+dnorm(s[2], sd=1/(dfi-4), log=TRUE)
+  log(2)+dnorm(s[1], sd=1/(dfi-4)/5, log=TRUE) +
+  log(2)+dnorm(s[2], sd=1/(dfi-4)/5, log=TRUE)
 ls <- -2 # Log of Jump Standard Deviation
 acc <- 0 # Accepted Proposals in one batch
 lss <- ls # Sequence of LS for reference
