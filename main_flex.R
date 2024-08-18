@@ -198,7 +198,7 @@ coefs[(nX+1):ncol(covar.list[[1]]),,1] <-
                                   smooth.sigma = 1,flat.sigma = 1)$V,
              lb=rep(0,ncol(B))))
 sigmays[] <- residual_var
-pens[,1] <- c(0.1,0.5)
+pens[,1] <- c(0.01,0.01)
 sigmaws[] <- random_effect_var
 # REs[,,1] <- array(rnorm(prod(dim(long_ss))),
 #                   dim=dim(long_ss))
