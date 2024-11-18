@@ -13,290 +13,338 @@ interval_time_exp_rate <- 20 # 1+Exp(rate)
 num_visits_mean <- 10 # Poisson
 N_cont_covars <- 2 # N(0,1) continous covariates
 N_binary_covars <- 2
-p_binary_covars <- c(1,0.5)
+p_binary_covars <- c(1, 0.5)
 random_effect_var <- 1
 residual_var <- 0.5
 
-true_fixed_effect <- matrix(c(+0.4,+0.4,-0.5,
-                              -0.5,-0.5,+0.1,
-                              +0.1,+0.1,+0.5),nrow = 3,ncol = 3,byrow=TRUE)
+true_fixed_effect <- matrix(c(
+  +0.4, +0.4, -0.5,
+  -0.5, -0.5, +0.1,
+  +0.1, +0.1, +0.5
+), nrow = 3, ncol = 3, byrow = TRUE)
 nX <- 3
 # true_fixed_effect <- matrix(c(0,0,0),1,3)
-a0 <- 1; b0 <- 70; d0 <- 5
-mode1<-75; range_L1 <- 30; range_R1 <- 90
-mean1 <- 70; sd1 <- 5; mean2 <- 100; sd2 <- 5; p1 <- 0.4; p2 <- 0.6
+a0 <- 1
+b0 <- 70
+d0 <- 5
+mode1 <- 75
+range_L1 <- 30
+range_R1 <- 90
+mean1 <- 70
+sd1 <- 5
+mean2 <- 100
+sd2 <- 5
+p1 <- 0.4
+p2 <- 0.6
 
 N <- 250
 
 dataset_num <- 1
 
-CI_repeat <- array(0,dim=c(dataset_num,1201,8))
+CI_repeat <- array(0, dim = c(dataset_num, 1201, 8))
 # coef_repeat <- array(0,dim=c(dataset_num,5000,5))
-CI_covariate_repeat <- array(0,dim=c(dataset_num,nrow(true_fixed_effect),7))
+CI_covariate_repeat <- array(0, dim = c(dataset_num, nrow(true_fixed_effect), 7))
 
-coef_repeat_flex <- array(0,dim=c(dataset_num,5000,4+20))
+coef_repeat_flex <- array(0, dim = c(dataset_num, 5000, 4 + 20))
 
-RE_repeat <- array(0,dim=c(dataset_num,N,7))
+RE_repeat <- array(0, dim = c(dataset_num, N, 7))
 # RE + fixed intercept
-offset_repeat <- array(0,dim=c(dataset_num,N,7))
+offset_repeat <- array(0, dim = c(dataset_num, N, 7))
 
-sigmay_repeat <- array(0,dim=c(dataset_num,7))
-sigmaw_repeat <- array(0,dim=c(dataset_num,7))
-Q50 <- array(0,dim=c(dataset_num,6))
+sigmay_repeat <- array(0, dim = c(dataset_num, 7))
+sigmaw_repeat <- array(0, dim = c(dataset_num, 7))
+Q50 <- array(0, dim = c(dataset_num, 6))
 true_Q50 <- rep(0, dataset_num)
 
-for(di in 1:dataset_num){
-  
-  cat(sprintf("%d:\n ",di))
+for (di in 1:dataset_num) {
+  cat(sprintf("%d:\n ", di))
   # Generate a set of data
-  
+
   start_times <- runif(N, start_time_low, start_time_upper)
-  visits <- pmax(rpois(N, num_visits_mean),1)
+  visits <- pmax(rpois(N, num_visits_mean), 1)
   df <- data.frame()
-  for(i in 1:N){
-    interval <- rexp(visits[i]-1,interval_time_exp_rate) + 1
+  for (i in 1:N) {
+    interval <- rexp(visits[i] - 1, interval_time_exp_rate) + 1
     df <- rbind(df, data.frame(
       ageori = start_times[i] + c(0, cumsum(interval)),
       id = rep(i, visits[i])
     ))
   }
-  df <- df[dplyr::between(df$ageori,0,120),]
+  df <- df[dplyr::between(df$ageori, 0, 120), ]
   dfi <- 24
-  qknot <- (1:(dfi-3))/(dfi-2)
-  VIF <- 1/3
-  boundary.knot <- c(0,120)
-  t01 <- (df$ageori-boundary.knot[1])/(boundary.knot[2]-boundary.knot[1])
-  t01 <- t01[dplyr::between(t01,0,1)]
-  knot <- betaKDE(t01,s=VIF,q=qknot)$quantile
-  knot <- (boundary.knot[2]-boundary.knot[1])*knot+boundary.knot[1]
-  
-  X <- cbind(X1=rbinom(N,1,p_binary_covars[1]),
-             X2=rbinom(N,1,p_binary_covars[2]),
-             X3=rnorm(N))
+  qknot <- (1:(dfi - 3)) / (dfi - 2)
+  VIF <- 1 / 3
+  boundary.knot <- c(0, 120)
+  t01 <- (df$ageori - boundary.knot[1]) / (boundary.knot[2] - boundary.knot[1])
+  t01 <- t01[dplyr::between(t01, 0, 1)]
+  knot <- betaKDE(t01, s = VIF, q = qknot)$quantile
+  knot <- (boundary.knot[2] - boundary.knot[1]) * knot + boundary.knot[1]
+
+  X <- cbind(
+    X1 = rbinom(N, 1, p_binary_covars[1]),
+    X2 = rbinom(N, 1, p_binary_covars[2]),
+    X3 = rnorm(N)
+  )
   X_names <- colnames(X)
   # X <- matrix(0, nrow(X), ncol(X))
   # X <- matrix(rep(1,N),N,1)
   # colnames(X) <- c('intercept')
-  df <- cbind(df, X[df$id,])
-  
-  Y <- as.matrix(df[,X_names]) %*% true_fixed_effect
-  truthRE <- matrix(rnorm(N*3,sd=sqrt(random_effect_var)),nrow=N,ncol=ncol(Y))
-  Y <- Y + matrix(rnorm(length(Y),sd=sqrt(residual_var)),nrow=nrow(Y),ncol=ncol(Y))
-  Y <- Y + truthRE[df$id,]
-  
-  coef00 <- c(0,0,c(1,4,7,1)/100,0,0)
-  B00 <- splines2::ibs(df$ageori,knots=knot,degree=2,intercept=TRUE,Boundary.knots=c(0,120))
-  
-  Y[,1] <- Y[,1] + f_sigmoid(df$ageori,2,70,5) #B00 %*% coef00
-  Y[,2] <- Y[,2] + f_sshape(df$ageori,mode1,range_L1,range_R1)*2
-  Y[,3] <- Y[,3] + f_wiggle(df$ageori,mean1,sd1,mean2,sd2,p1,p2)
-  colnames(Y) <- c('Y1','Y2','Y3')
-  
-  mis <- missing_pattern(nrow(Y),3,1/5,1/10)
-  for(i in 1:nrow(Y))
-    for(j in 1:ncol(Y))
-      if(mis[i,j]) Y[i,j] <- NA
-  
-  Y <- Y[,2]
-  mis <- mis[,2]
-  truthRE0 <- truthRE[df$id,2]
-  df <- cbind(df,Y,truthRE0)
-  
+  df <- cbind(df, X[df$id, ])
+
+  Y <- as.matrix(df[, X_names]) %*% true_fixed_effect
+  truthRE <- matrix(rnorm(N * 3, sd = sqrt(random_effect_var)), nrow = N, ncol = ncol(Y))
+  Y <- Y + matrix(rnorm(length(Y), sd = sqrt(residual_var)), nrow = nrow(Y), ncol = ncol(Y))
+  Y <- Y + truthRE[df$id, ]
+
+  coef00 <- c(0, 0, c(1, 4, 7, 1) / 100, 0, 0)
+  B00 <- splines2::ibs(df$ageori, knots = knot, degree = 2, intercept = TRUE, Boundary.knots = c(0, 120))
+
+  Y[, 1] <- Y[, 1] + f_sigmoid(df$ageori, 2, 70, 5) # B00 %*% coef00
+  Y[, 2] <- Y[, 2] + f_sshape(df$ageori, mode1, range_L1, range_R1) * 2
+  Y[, 3] <- Y[, 3] + f_wiggle(df$ageori, mean1, sd1, mean2, sd2, p1, p2)
+  colnames(Y) <- c("Y1", "Y2", "Y3")
+
+  mis <- missing_pattern(nrow(Y), 3, 1 / 5, 1 / 10)
+  for (i in 1:nrow(Y)) {
+    for (j in 1:ncol(Y)) {
+      if (mis[i, j]) Y[i, j] <- NA
+    }
+  }
+
+  Y <- Y[, 2]
+  mis <- mis[, 2]
+  truthRE0 <- truthRE[df$id, 2]
+  df <- cbind(df, Y, truthRE0)
+
   usePackage("splines2")
   usePackage("TruncatedNormal")
   # Loading Data ---------------------------------------------------
   df <- df
-  
+
   K <- 1 # Number of biomarkers
   # All non-age covariates
-  X <- as.matrix(df[,X_names],ncol=nX) 
-  
-  Y <- as.matrix(df[,c('Y')],ncol=1) # Biomarkers array
+  X <- as.matrix(df[, X_names], ncol = nX)
+
+  Y <- as.matrix(df[, c("Y")], ncol = 1) # Biomarkers array
   t <- df$ageori # Age in original scale
   dfi <- 24 # DoF of Spline
-  qknot <- (1:(dfi-3))/(dfi-2) # Quantiles to determine knots
+  qknot <- (1:(dfi - 3)) / (dfi - 2) # Quantiles to determine knots
   VIF <- 0.1 # Variance inflation factor for BETAKDE
-  
+
   library(ggplot2)
-  
+
   # Construct biomarker-specific design matrix
-  covar.list <- as.list(rep(NA,K))
-  knot.list <- as.list(rep(NA,K))
-  boundary.knot <- c(0,120)#range(t)
-  #remove <- 2# Removing the first .. and last .. basis
-  for(i in 1:K){
+  covar.list <- as.list(rep(NA, K))
+  knot.list <- as.list(rep(NA, K))
+  boundary.knot <- c(0, 120) # range(t)
+  # remove <- 2# Removing the first .. and last .. basis
+  for (i in 1:K) {
     # Calculate knot points
-    t01 <- (t-boundary.knot[1])/(boundary.knot[2]-boundary.knot[1])
-    t01 <- t01[dplyr::between(t01,0,1)]
-    knot.list[[i]] <- betaKDE(t01,s=VIF,q=qknot)$quantile
-    knot.list[[i]] <- (boundary.knot[2]-boundary.knot[1])*knot.list[[i]]+boundary.knot[1]
-    B <- ibs(pmin(pmax(t,min(boundary.knot)),max(boundary.knot)), 
-             knots=knot.list[[i]], Boundary.knots = boundary.knot, 
-             degree=2, intercept=TRUE) # IBSpline Basis
-    #B <- iSpline(t, knots=knot.list[[i]], Boundary.knots = boundary.knot, 
+    t01 <- (t - boundary.knot[1]) / (boundary.knot[2] - boundary.knot[1])
+    t01 <- t01[dplyr::between(t01, 0, 1)]
+    knot.list[[i]] <- betaKDE(t01, s = VIF, q = qknot)$quantile
+    knot.list[[i]] <- (boundary.knot[2] - boundary.knot[1]) * knot.list[[i]] + boundary.knot[1]
+    B <- ibs(pmin(pmax(t, min(boundary.knot)), max(boundary.knot)),
+      knots = knot.list[[i]], Boundary.knots = boundary.knot,
+      degree = 2, intercept = TRUE
+    ) # IBSpline Basis
+    # B <- iSpline(t, knots=knot.list[[i]], Boundary.knots = boundary.knot,
     #             degree=2, intercept=TRUE) # IBSpline Basis
-    #B <- B/min(apply(B,2,max))
-    #B <- B[,(3):(ncol(B)-2)]
-    covar.list[[i]] <- cbind(X,B)
+    # B <- B/min(apply(B,2,max))
+    # B <- B[,(3):(ncol(B)-2)]
+    covar.list[[i]] <- cbind(X, B)
   }
-  
-  
+
+
   # Create consecutive pseudo-IDs for each individual for easy coding
   unique.IDs <- sort(unique(df$id))
-  df$ID <- match(df$id,unique.IDs)
-  # Pre-calculate longitudinal sample size 
+  df$ID <- match(df$id, unique.IDs)
+  # Pre-calculate longitudinal sample size
   # for each individual-biomarker combination
-  long_ss <- matrix(0,nrow=length(unique.IDs),ncol=K)
-  for(i in 1:length(unique.IDs))
-    for(j in 1:K){
-      long_ss[i,j] <- sum((df$ID==i)&(!is.na(Y[,j])))
+  long_ss <- matrix(0, nrow = length(unique.IDs), ncol = K)
+  for (i in 1:length(unique.IDs)) {
+    for (j in 1:K) {
+      long_ss[i, j] <- sum((df$ID == i) & (!is.na(Y[, j])))
     }
-  
-  long_all_ss <- rep(0,length(unique.IDs))
-  for(i in seq_along(unique.IDs)){
-    long_all_ss[i] <- sum(df$ID==i)
   }
-  
+
+  long_all_ss <- rep(0, length(unique.IDs))
+  for (i in seq_along(unique.IDs)) {
+    long_all_ss[i] <- sum(df$ID == i)
+  }
+
   R <- 1e4 # Set Number of Iterations
-  Burnin <- R/2 # Set Number of Burn-ins
-  
-  
+  Burnin <- R / 2 # Set Number of Burn-ins
+
+
   # Set Priors -----------------------------------------------------
   # Beta parameter: Coefficients for adjusting covariates
-  beta.prior <- list(mean=rep(0,ncol(X)),
-                     variance=diag(rep(10000,ncol(X))),
-                     #variance=10000,
-                     precision=NULL)
+  beta.prior <- list(
+    mean = rep(0, ncol(X)),
+    variance = diag(rep(10000, ncol(X))),
+    # variance=10000,
+    precision = NULL
+  )
   beta.prior$precision <- solve(beta.prior$variance)
   # Gamma parameter: Coefficients for splines
-  gamma.prior <- list(mean=rep(0,ncol(B)),
-                      variance=NULL)
-  coef.prior <- list(mean=c(beta.prior$mean, gamma.prior$mean),
-                     variance=NULL,
-                     precision=NULL)
-  #coef.prior$precision <- solve(coef.prior$variance)
-  
+  gamma.prior <- list(
+    mean = rep(0, ncol(B)),
+    variance = NULL
+  )
+  coef.prior <- list(
+    mean = c(beta.prior$mean, gamma.prior$mean),
+    variance = NULL,
+    precision = NULL
+  )
+  # coef.prior$precision <- solve(coef.prior$variance)
+
   # Set initial guess ----------------------------------------------
-  
+
   # Fixed Effect of X & All-positive Spline Coefs
-  coefs <- array(0,c(ncol(covar.list[[1]]),ncol(Y),R)) 
+  coefs <- array(0, c(ncol(covar.list[[1]]), ncol(Y), R))
   nX <- ncol(X)
   # Variance of Biomarkers
-  sigmays <- rep(0,R)
-  sigmaws <- rep(0,R)
+  sigmays <- rep(0, R)
+  sigmaws <- rep(0, R)
   pens <- array(0, c(2, R))
-  REs <- array(0, c(dim(long_ss),R))
-  offsets <- array(0, c(dim(long_ss),R))
-  
-  coefs[1:nX,,1] <- 
-    t(rtmvnorm(ncol(Y),mu=beta.prior$mean,
-               sigma=beta.prior$variance))
-  coefs[(nX+1):ncol(covar.list[[1]]),,1] <- 
-    t(rtmvnorm(ncol(Y),mu=gamma.prior$mean,
-               sigma=penalty_Matrix(ncol(B),
-                                    smooth.sigma = 1,flat.sigma = 1)$V,
-               lb=rep(0,ncol(B))))
+  REs <- array(0, c(dim(long_ss), R))
+  offsets <- array(0, c(dim(long_ss), R))
+
+  coefs[1:nX, , 1] <-
+    t(rtmvnorm(ncol(Y),
+      mu = beta.prior$mean,
+      sigma = beta.prior$variance
+    ))
+  coefs[(nX + 1):ncol(covar.list[[1]]), , 1] <-
+    t(rtmvnorm(ncol(Y),
+      mu = gamma.prior$mean,
+      sigma = penalty_Matrix(ncol(B),
+        smooth.sigma = 1, flat.sigma = 1
+      )$V,
+      lb = rep(0, ncol(B))
+    ))
   sigmays[] <- residual_var
-  pens[,1] <- c(0.01,0.01)
+  pens[, 1] <- c(0.01, 0.01)
   sigmaws[] <- random_effect_var
   # REs[,,1] <- array(rnorm(prod(dim(long_ss))),
   #                   dim=dim(long_ss))
-  
+
   # Prior density for penalties
-  lpd <- function(s) 
-    log(2)+dnorm(s[1], sd=1/(dfi-4)/5, log=TRUE) +
-    log(2)+dnorm(s[2], sd=1/(dfi-4)/5, log=TRUE)
+  lpd <- function(s) {
+    log(2) + dnorm(s[1], sd = 1 / (dfi - 4) / 5, log = TRUE) +
+      log(2) + dnorm(s[2], sd = 1 / (dfi - 4) / 5, log = TRUE)
+  }
   ls <- -2 # Log of Jump Standard Deviation
   acc <- 0 # Accepted Proposals in one batch
   lss <- ls # Sequence of LS for reference
-  #w <- planck_taper(ncol(B), eps=0.1) # Window Function
-  w <- rep(1,ncol(B))
-  #w <- NULL
+  # w <- planck_taper(ncol(B), eps=0.1) # Window Function
+  w <- rep(1, ncol(B))
+  # w <- NULL
   # Perform MCMC ----------------------------------------------------
   time0 <- proc.time()
-  for(i in 1:(R-1)){
-    if((i+1)%%(R/10)==0) cat(sprintf("%03d%% ",(i+1)/(R/100)))
-    if((i+1)%%(R)==0) cat("\n")
-    prec <- block_Matrix(beta.prior$precision,
-                         penalty_Matrix(ncol(B),pens[1,i],pens[2,i],
-                                        weight=w)$prec)
-    sigmays[i+1] <- update_sigmay(covar.list,Y,as.matrix(REs[df$ID,,i],ncol=K),
-                                  as.matrix(coefs[,,i],ncol=K),
-                                  3,0.5)
-    
-    coefs[,,i+1] <- aperm(update_coef(covar.list,nX,Y,as.matrix(REs[df$ID,,i],ncol=K),
-                                      sigmays[i+1],sigmaws[i],df$ID,
-                                      coef.prior$mean,
-                                      prec,samples=1),c(2,3,1))
-    REs[,,i+1] <- update_W(covar.list,Y,as.matrix(coefs[,,i+1],ncol=K),long_ss,
-                           df$ID,sigmays[i+1],sigmaws[i])
-    new_pens <- update_pens(gamma=as.matrix(coefs[(nX+1):ncol(covar.list[[1]]),,i+1],nrow=K),
-                            mu=gamma.prior$mean,
-                            lambda=pens[,i],
-                            lpd=lpd,
-                            ls=ls,
-                            weight=w
+  for (i in 1:(R - 1)) {
+    if ((i + 1) %% (R / 10) == 0) cat(sprintf("%03d%% ", (i + 1) / (R / 100)))
+    if ((i + 1) %% (R) == 0) cat("\n")
+    prec <- block_Matrix(
+      beta.prior$precision,
+      penalty_Matrix(ncol(B), pens[1, i], pens[2, i],
+        weight = w
+      )$prec
     )
-    pens[,i+1] <- new_pens$new
+    sigmays[i + 1] <- update_sigmay(
+      covar.list, Y, as.matrix(REs[df$ID, , i], ncol = K),
+      as.matrix(coefs[, , i], ncol = K),
+      3, 0.5
+    )
+
+    coefs[, , i + 1] <- aperm(update_coef(covar.list, nX, Y, as.matrix(REs[df$ID, , i], ncol = K),
+      sigmays[i + 1], sigmaws[i], df$ID,
+      coef.prior$mean,
+      prec,
+      samples = 1
+    ), c(2, 3, 1))
+    REs[, , i + 1] <- update_W(
+      covar.list, Y, as.matrix(coefs[, , i + 1], ncol = K), long_ss,
+      df$ID, sigmays[i + 1], sigmaws[i]
+    )
+    new_pens <- update_pens(
+      gamma = as.matrix(coefs[(nX + 1):ncol(covar.list[[1]]), , i + 1], nrow = K),
+      mu = gamma.prior$mean,
+      lambda = pens[, i],
+      lpd = lpd,
+      ls = ls,
+      weight = w
+    )
+    pens[, i + 1] <- new_pens$new
     acc <- acc + new_pens$acc_status
-    if(i%%50==0){
-      delta <- min(0.1, 1/sqrt(i/50))
-      rate <- acc/50
-      if(rate >= 0.234){
+    if (i %% 50 == 0) {
+      delta <- min(0.1, 1 / sqrt(i / 50))
+      rate <- acc / 50
+      if (rate >= 0.234) {
         ls <- ls + delta
-      }
-      else{
+      } else {
         ls <- ls - delta
       }
       acc <- 0
       lss <- c(lss, ls)
     }
-    #pens[,i+1] <- pens[,i]
     # pens[,i+1] <- pens[,i]
-    
+    # pens[,i+1] <- pens[,i]
+
     # REs[,,i+1] <- update_W(covar.list,Y,as.matrix(coefs[,,i+1],ncol=K),long_ss,
     #                        df$ID,sigmays[i+1],sigmaws[i])
-    
-    sigmaws[i+1] <- update_sigmaw(REs[,,i+1],3,0.5)
+
+    sigmaws[i + 1] <- update_sigmaw(REs[, , i + 1], 3, 0.5)
   }
-  
-  for(i in 1:R){
-    for(k in 1:K){
-      offsets[,k,i] <- REs[,k,i] + coefs[1,k,i]
+
+  for (i in 1:R) {
+    for (k in 1:K) {
+      offsets[, k, i] <- REs[, k, i] + coefs[1, k, i]
     }
   }
   ci_level <- 0.95
-  ages <- seq(0,120,by=0.1)
-  points <- array(0,c(length(ages),R-Burnin))
-  
-  indice <- (Burnin+1):R
+  ages <- seq(0, 120, by = 0.1)
+  points <- array(0, c(length(ages), R - Burnin))
+
+  indice <- (Burnin + 1):R
 }
 
 
-pdf('flex_diagnosis.pdf',width=14,height=7)
-df_0 <- df %>% select(ageori, Y, ID) %>% mutate(type='Observed') %>% rename(value=Y)
-x_test <- seq(0,120,by=0.1)
-covar_test <- splines2::ibs(x_test, knots = knot.list[[1]],
-                            Boundary.knots = boundary.knot,
-                            degree = 2, intercept = TRUE) %>%
+pdf("flex_diagnosis.pdf", width = 14, height = 7)
+df_0 <- df %>%
+  select(ageori, Y, ID) %>%
+  mutate(type = "Observed") %>%
+  rename(value = Y)
+x_test <- seq(0, 120, by = 0.1)
+covar_test <- splines2::ibs(x_test,
+  knots = knot.list[[1]],
+  Boundary.knots = boundary.knot,
+  degree = 2, intercept = TRUE
+) %>%
   cbind(1, .)
-df_1 <- data.frame(value = covar_test %*% rowMeans(coefs[-(2:3),1,-(1:5000)]),
-ageori = x_test,
-type='Fitted',
-ID=-1
+df_1 <- data.frame(
+  value = covar_test %*% rowMeans(coefs[-(2:3), 1, -(1:5000)]),
+  ageori = x_test,
+  type = "Fitted",
+  ID = -1
 )
-df_2 <- data.frame(value = f_sshape(x_test,mode1,range_L1,range_R1)*2 + true_fixed_effect[1,2],
-ageori = x_test,
-type='Truth',
-ID=-1
+df_2 <- data.frame(
+  value = f_sshape(x_test, mode1, range_L1, range_R1) * 2 + true_fixed_effect[1, 2],
+  ageori = x_test,
+  type = "Truth",
+  ID = -1
 )
-df_plot <- rbind(df_0, df_1, df_2) 
+df_plot <- rbind(df_0, df_1, df_2)
 print(ggplot(df_plot) +
-        geom_line(aes(x=ageori,y=value,group=interaction(ID, type),
-                      color=type), 
-                  alpha=0.3) +
-    scale_x_continuous(limits=c(0,120),breaks=seq(0,120,by=10)) +
-    scale_y_continuous(limits=c(-3,7),breaks=seq(-3,7,by=1)) +
-    scale_color_manual(values=c('Fitted'='red','Observed'='black','Truth'='blue')) +
-    labs(x='Age',y='Y'))
+  geom_line(
+    aes(
+      x = ageori, y = value, group = interaction(ID, type),
+      color = type
+    ),
+    alpha = 0.3
+  ) +
+  scale_x_continuous(limits = c(0, 120), breaks = seq(0, 120, by = 10)) +
+  scale_y_continuous(limits = c(-3, 7), breaks = seq(-3, 7, by = 1)) +
+  scale_color_manual(values = c("Fitted" = "red", "Observed" = "black", "Truth" = "blue")) +
+  labs(x = "Age", y = "Y"))
 dev.off()
