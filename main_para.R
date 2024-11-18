@@ -4,7 +4,6 @@ seed <- as.integer(args[1])
 set.seed(seed)
 
 source("functions_flex.R")
-source("exchangable_cov.R")
 
 library(EnvStats)
 library(rstan)
