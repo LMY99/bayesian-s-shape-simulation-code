@@ -40,7 +40,7 @@ for(filename in filenames){
     if(dirr=='logit') true_turning <- rep(70,100)
   inflect_coverage <- mean((rowMaxs(turning[,1:3])-true_turning)*(rowMins(turning[,1:3])-true_turning)<=0)*100
   inflect_bvm <- colMeans(turning)[c(5,6,4)]
-  row <- c(row, sprintf("%.2f^2, %.0f%%",
+  row <- c(row, sprintf("%.2f, %.0f%%",
                         signif(sqrt(inflect_bvm[3]),3),
                         inflect_coverage))
   }
@@ -51,7 +51,7 @@ for(filename in filenames){
     true_Q50 <- rep(69.31112,100)
   q_coverage <- mean((rowMaxs(Q50[,1:3])-true_Q50)*(rowMins(Q50[,1:3])-true_Q50)<=0)*100
   q_bvm <- colMeans(Q50)[c(5,6,4)]
-  row <- c(row, sprintf("%.2f^2, %.0f%%",signif(sqrt(q_bvm[3]),3),
+  row <- c(row, sprintf("%.2f, %.0f%%",signif(sqrt(q_bvm[3]),3),
                         q_coverage))
   sw_cover <- mean((sigmaw_repeat[,4]-sigmaw_repeat[,2])*(sigmaw_repeat[,4]-sigmaw_repeat[,3])<=0)*100
   sw_bvm <- colMeans(sigmaw_repeat)[c(6,7,5)]*1e4
