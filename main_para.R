@@ -24,7 +24,6 @@ true_fixed_effect <- matrix(c(
   +0.1, +0.1, +0.5
 ), nrow = 3, ncol = 3, byrow = TRUE)
 nX <- 3
-# true_fixed_effect <- matrix(c(0,0,0),1,3)
 a0 <- 1
 b0 <- 70
 d0 <- 5
@@ -45,7 +44,6 @@ dataset_num <- 1
 R <- 10000L
 
 CI_repeat <- array(0, dim = c(dataset_num, 1201, 8))
-# coef_repeat <- array(0,dim=c(dataset_num,5000,5))
 CI_covariate_repeat <- array(0, dim = c(dataset_num, nrow(true_fixed_effect), 7))
 turning <- array(0, dim = c(dataset_num, 6))
 true_turning <- rep(0, dataset_num)
@@ -93,9 +91,6 @@ for (di in 1:dataset_num) {
     X3 = rnorm(N)
   )
   X_names <- colnames(X)
-  # X <- matrix(0, nrow(X), ncol(X))
-  # X <- matrix(rep(1,N),N,1)
-  # colnames(X) <- c('intercept')
   df <- cbind(df, X[df$id, ])
 
   Y <- as.matrix(df[, X_names]) %*% true_fixed_effect
@@ -136,17 +131,6 @@ for (di in 1:dataset_num) {
     }
   }
   Y[is.na(Y)] <- 0
-  # data {
-  #   int<lower=1> Nobs;
-  #   int<lower=1> Npred;
-  #   int<lower=1> Nout;
-  #   int<lower=1> Nind;
-  #   matrix[Nobs,Npred] x;
-  #   vector[Nobs] t;
-  #   real y[Nobs,Nout];
-  #   array[Nobs,Nout] int<lower=0,upper=1> y_obs;
-  #   array[Nobs] int<lower=1,upper=Nind> jj;
-  # }
   dat <- list(
     Nobs = nrow(X), Npred = ncol(X),
     Nout = ncol(Y), Nind = max(df$id),
@@ -192,7 +176,6 @@ for (di in 1:dataset_num) {
   Q50[di, 4] <- sum(Q50[di, 5:6])
 
   CI_repeat[di, , ] <- as.matrix(est)
-  # coef_repeat[di,,] <- t(coefs[,1,indice])
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     stan.array$beta[, 1, ], 2,
@@ -202,8 +185,6 @@ for (di in 1:dataset_num) {
   CI_covariate_repeat[di, , 7] <- t(apply(stan.array$beta[, 1, ], 2, var))
   CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
   CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
-
-  # coef_repeat_flex[di,,] <- t(coefs[,1,indice])
 
   RE_repeat[di, , 1:3] <- t(apply(
     stan.array$randomint[, 1, ], 2,

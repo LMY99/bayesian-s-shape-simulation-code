@@ -251,41 +251,10 @@ lincon <- function(l, q) {
 
 # Sample from Umbrella-restricted multivariate normal distribution(UMVN)
 ruMVN <- function(n, mu, V, q, k, Ms, burnin = 100) {
-  # First q parameter has no restriction
-  # The rest length(mu)-q parameters are all positive and peaks at its k-th location
   require(hdtg)
   stopifnot(c(length(mu) == dim(V)[1], dim(V)[1] == dim(V)[2], q + k <= length(mu)))
-  # require(TruncatedNormal)
   l <- length(mu)
-  # M <- array(0,dim(V)+c(1,0))
-  # for(i in 1:(q+1)) M[i,i] <- 1
-  # if(q+2<=l){
-  # for(i in (q+2):l){
-  #   M[i,i] <- 1; M[i,i-1] <- -1
-  #   if(i>q+k) M[i,] <- M[i,] * (-1)
-  # }}
-  # M[l+1,l] <- 1
-  M <- Ms[(q + 1):(l + 1), , k] # M <- Ms[(q+1):l,,k]
-  # new.mu <- drop(M%*%mu)
-  # new.V <- M%*%V%*%t(M); new.V[l+1,l+1] <- new.V[l+1,l+1] + eps
-  # lb <- c(rep(-Inf,q),rep(0,l+1-q))
-  # ub <- rep(+Inf,l+1)
-  # res <- rtmvnorm(n,new.mu,new.V,lb,ub)
-  # if(n>1){
-  # res <- res[,1:l]
-  # for(i in (q+2):l){
-  #   if(i<=q+k) res[,i] <- res[,i] + res[,i-1]
-  #   else res[,i] <- res[,i-1] - res[,i]
-  # }
-  # }
-  # else{
-  # res <- res[1:l]
-  # for(i in (q+2):l){
-  #   if(i<=q+k) res[i] <- res[i] + res[i-1]
-  #   else res[i] <- res[i-1] - res[i]
-  # }
-  # }
-
+  M <- Ms[(q + 1):(l + 1), , k]
   init0 <- c(runif(q, -0.5, 0.5))
   tt <- c(rnorm(1, sd = 0.1), runif(k - 1, 0, 0.1), runif(l - q - k, -0.1, 0))
   init0 <- c(init0, exp(cumsum(tt)))
@@ -349,22 +318,12 @@ hdtg_S <- function(n, mu, sigma, free = NULL, burnin = 5) {
 }
 # Calculate (log-)normalizing constant of UMVN
 puMVN <- function(mu, V, q, Ms, k = NULL, eps = 1e-2, log = T, verbose = FALSE) {
-  # require(Rmpfr)
   stopifnot(c(length(mu) == dim(V)[1], dim(V)[1] == dim(V)[2], q <= length(mu)))
   require(mvtnorm)
   l <- length(mu)
   if (is.null(k)) k <- 1:(l - q)
-  res <- rep(0, length(k)) # res <- mpfr(res, 128)
-  # rel_error <- numeric(0)
+  res <- rep(0, length(k))
   for (ki in 1:length(k)) {
-    # M <- array(0,dim(V)+c(1,0))
-    # for(i in 1:(q+1)) M[i,i] <- 1
-    # if(q+2<=l){
-    #   for(i in (q+2):l){
-    #     M[i,i] <- 1; M[i,i-1] <- -1
-    #     if(i>q+k0) M[i,] <- M[i,] * (-1)
-    #   }}
-    # M[l+1,l] <- 1
     k0 <- k[ki]
     M <- Ms[, , k0]
     new.mu <- drop(M %*% mu)
@@ -373,23 +332,9 @@ puMVN <- function(mu, V, q, Ms, k = NULL, eps = 1e-2, log = T, verbose = FALSE) 
     # print(new.V[l+1,l+1]-eps)
     lb <- c(rep(-Inf, q), rep(0, l - q + 1))
     ub <- rep(+Inf, l + 1)
-    # point <- c(rep(0.001/k0,k0),rep(0.001/(l+1-q-k0),l+1-q-k0))
-    # if(q>0) point <- c(new.mu[1:q],point)
-    # point <- ifelse(new.mu>=lb,new.mu,lb)
-    # pp <- mvtnorm::dmvnorm(point,new.mu,new.V,log=TRUE) -
-    # TruncatedNormal::dtmvnorm(point,new.mu,new.V,lb,ub,log=TRUE,type='qmc')
-    #  tmvtnorm::dtmvnorm(point,new.mu,new.V,lb,ub,log=TRUE) #-Inf occuring here
-    # pp <- TruncatedNormal::pmvnorm(new.mu, new.V, lb, ub, type='mc')
-    # pp <- mvtnorm::pmvnorm(lb,ub,new.mu,sigma=new.V)
     pp <- logpmvnorm(lb, ub, new.mu, new.V)
     res[ki] <- pp
-    # rel_error <- c(rel_error,attr(pp,"rel_error"))
-    # res <- c(res, log(pp))
   }
-  # if(any(is.na(res))) print(res)
-  # print(log(res))
-  # if(verbose) print(round(rbind(res,rel_error*100),2))
-  # print(res)
   if (log) {
     return((res))
   } else {
@@ -421,26 +366,12 @@ update_coef <- function(covars.list, nX, Y, RE, sy, sw, id, prior.mean, prior.pr
     mu <- mu + t(CC) %*% lik_prec %*% Y[, k][non_mis]
 
     mu <- as.vector(variance %*% mu)
-    # logp <- puMVN(mu,variance,nX,Ms,log=T,verbose=verbose)
-    # logp <- logp - max(logp)
-    # logp0 <- logp - matrixStats::logSumExp(logp)
-    # if(any(is.na(logp0)))
-    #  {print(logp);print(logp0)}
-    # print(logp)
-    # print(logp0)
-    # inflex <- sample(1:length(logp),1,
-    #                  prob=exp(logp)
-    #                  )
-    # res[,k] <- ruMVN(1,mu,variance,nX,inflex,Ms)
     if (nX > 0) {
       free_indice <- 1:nX
     } else {
       free_indice <- NULL
     }
     res[, , k] <- hdtg_S(samples, mu, variance, free_indice, burnin)
-    # ep <- exp(logp)
-    # inflex_prob[,k] <- logp#ep/sum(ep)
-    # res[,,k] <- t(replicate(samples,rtMVN(mu,variance,(nX+1):length(mu),SShape=TRUE)))
   }
   return(list(res = res))
 }
@@ -570,57 +501,16 @@ logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
   precision <- 100
   a <- lb - mu
   b <- ub - mu
-  # a=mpfr(a,precision);b=mpfr(b,precision)
-  # Reordering
-  # double_inf=which((a==-Inf)&(b==+Inf))
-  # no_inf=which(!is.infinite(b-a))
-  # no_inf=no_inf[order((b-a)[no_inf],decreasing=FALSE)]
-  # a_inf=which((a==-Inf)&(b!=+Inf))
-  # b_inf=which((a!=-Inf)&(b==+Inf))
-  # score=rep(NA,length(a))
-  # score[a_inf]=b[a_inf]; score[b_inf]=-a[b_inf]
-  # one_inf=c(a_inf,b_inf)
-  # one_inf=one_inf[order(score[one_inf],decreasing=FALSE)]
-  # perm=c(no_inf,one_inf,double_inf)
-  # a=a[perm]; b=b[perm]; Sigma=Sigma[perm,perm];
-  # Monte-Carlo
   C <- t(chol(Sigma))
   m <- ncol(C)
-  # d=rep(0,m);e=rep(0,m);f=rep(0,m);y=rep(0,m-1)
   d <- array(0, dim = c(Nmax, m))
   e <- array(0, dim = c(Nmax, m))
   f <- array(0, dim = c(Nmax, m))
   y <- array(0, dim = c(Nmax, m - 1))
   temp <- array(0, dim = c(Nmax, m - 1))
-  # d=mpfr(d,precision);e=mpfr(e,precision);f=mpfr(f,precision)
-  # y=mpfr(y,precision);temp=mpfr(temp,precision)
   d[, 1] <- ifelse(a[1] == -Inf, -Inf, pnorm(a[1] / C[1, 1], log = T))
   e[, 1] <- ifelse(b[1] == +Inf, 0, pnorm(b[1] / C[1, 1], log = T))
   f[, 1] <- e[1, 1] + log1mexp(e[1, 1] - d[1, 1])
-
-  # for(N in 1:Nmax){
-  #   w=runif(m-1)
-  #   for(i in 2:m){
-  #     #print(c(e[i-1],d[i-1]))
-  #     y[i-1]=qnorm(exp(d[i-1])+w[i-1]*(exp(e[i-1])-exp(d[i-1])),log=F)
-  #     #if(N==1) print(c(w[i-1],y[i-1]))
-  #     d[i]=ifelse(a[i]==-Inf,-Inf,
-  #       pnorm((a[i]-sum(C[i,1:(i-1)]*y[1:(i-1)]))/C[i,i],log=T)
-  #     )
-  #     e[i]=ifelse(b[i]==+Inf,0,
-  #       pnorm((b[i]-sum(C[i,1:(i-1)]*y[1:(i-1)]))/C[i,i],log=T)
-  #     )
-  #     #if(N==1) print(c(d[i],e[i]))
-  #     f[i]=e[i]+log1mexp(e[i]-d[i])+f[i-1]
-  #     #if(N==1) print(f[i])
-  #   }
-  #   #print(y)
-  #   #if(N==1) print("***")
-  #   #delta=f[m]+log1p(-exp(Intsum-f[m]))-log(N)
-  #   #Intsum=logSumExp(c(Intsum,delta))
-  #   ff[N]=f[m]
-  # }
-  # cat(c(sum(is.na(d[,1])),sum(is.na(e[,1])),sum(is.na(f[,1]))))
   w <- array(runif((m - 1) * Nmax), dim = c(Nmax, m - 1))
   for (i in 2:m) {
     temp[, i - 1] <- lwmean(d[, i - 1], e[, i - 1], w[, i - 1])
@@ -641,7 +531,6 @@ logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
     diff <- log1mexp(e[, i] - d[, i])
     diff <- ifelse(diff != -Inf, diff, log1mexp(.Machine$double.xmin))
     f[, i] <- e[, i] + diff + f[, i - 1]
-    # cat(c(sum(is.na(d[,i])),sum(is.na(e[,i])),sum(is.na(f[,i]))))
   }
   res <- logSumExp(f[, m], na.rm = TRUE) - log(sum(!is.na(f[, m])))
   if (is.na(res) || res == -Inf) {
@@ -666,6 +555,5 @@ logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
     sd0 <- var0 / 2
     attr(res, "rel_error") <- exp(sd0 - res)
   }
-  # cat(sum(is.na(ad))," ",sum(is.na(f[,m])), "\n")
   return(res)
 }
