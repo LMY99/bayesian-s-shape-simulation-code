@@ -21,7 +21,6 @@ true_fixed_effect <- matrix(c(
   +0.1, +0.1, +0.5
 ), nrow = 3, ncol = 3, byrow = TRUE)
 nX <- 3
-# true_fixed_effect <- matrix(c(0,0,0),1,3)
 a0 <- 1
 b0 <- 70
 d0 <- 4
@@ -40,13 +39,11 @@ N <- 250
 dataset_num <- 1
 
 CI_repeat <- array(0, dim = c(dataset_num, 1201, 8))
-# coef_repeat <- array(0,dim=c(dataset_num,5000,5))
 CI_covariate_repeat <- array(0, dim = c(dataset_num, nrow(true_fixed_effect), 7))
 
 coef_repeat_flex <- array(0, dim = c(dataset_num, 5000, 4 + 20))
 
 RE_repeat <- array(0, dim = c(dataset_num, N, 7))
-# RE + fixed intercept
 offset_repeat <- array(0, dim = c(dataset_num, N, 7))
 
 sigmay_repeat <- array(0, dim = c(dataset_num, 7))
@@ -84,9 +81,6 @@ for (di in 1:dataset_num) {
     X3 = rnorm(N)
   )
   X_names <- colnames(X)
-  # X <- matrix(0, nrow(X), ncol(X))
-  # X <- matrix(rep(1,N),N,1)
-  # colnames(X) <- c('intercept')
   df <- cbind(df, X[df$id, ])
 
   Y <- as.matrix(df[, X_names]) %*% true_fixed_effect
@@ -146,10 +140,6 @@ for (di in 1:dataset_num) {
       knots = knot.list[[i]], Boundary.knots = boundary.knot,
       degree = 2, intercept = TRUE
     ) # IBSpline Basis
-    # B <- iSpline(t, knots=knot.list[[i]], Boundary.knots = boundary.knot,
-    #             degree=2, intercept=TRUE) # IBSpline Basis
-    # B <- B/min(apply(B,2,max))
-    # B <- B[,(3):(ncol(B)-2)]
     covar.list[[i]] <- cbind(X, B)
   }
 
@@ -179,8 +169,7 @@ for (di in 1:dataset_num) {
   # Beta parameter: Coefficients for adjusting covariates
   beta.prior <- list(
     mean = rep(0, ncol(X)),
-    variance = diag(rep(10000, ncol(X))),
-    # variance=10000,
+    variance = ifelse(ncol(X) > 1, rep(10000, ncol(X)), matrix(10000)),
     precision = NULL
   )
   beta.prior$precision <- solve(beta.prior$variance)
@@ -224,8 +213,6 @@ for (di in 1:dataset_num) {
   sigmays[] <- residual_var
   pens[, 1] <- c(0.01, 0.01)
   sigmaws[] <- random_effect_var
-  # REs[,,1] <- array(rnorm(prod(dim(long_ss))),
-  #                   dim=dim(long_ss))
 
   # Prior density for penalties
   lpd <- function(s) {
@@ -235,9 +222,7 @@ for (di in 1:dataset_num) {
   ls <- -2 # Log of Jump Standard Deviation
   acc <- 0 # Accepted Proposals in one batch
   lss <- ls # Sequence of LS for reference
-  # w <- planck_taper(ncol(B), eps=0.1) # Window Function
   w <- rep(1, ncol(B))
-  # w <- NULL
   # Perform MCMC ----------------------------------------------------
   time0 <- proc.time()
   for (i in 1:(R - 1)) {
@@ -286,11 +271,6 @@ for (di in 1:dataset_num) {
       acc <- 0
       lss <- c(lss, ls)
     }
-    # pens[,i+1] <- pens[,i]
-    # pens[,i+1] <- pens[,i]
-
-    # REs[,,i+1] <- update_W(covar.list,Y,as.matrix(coefs[,,i+1],ncol=K),long_ss,
-    #                        df$ID,sigmays[i+1],sigmaws[i])
 
     sigmaws[i + 1] <- update_sigmaw(REs[, , i + 1], 3, 0.5)
   }
@@ -309,7 +289,6 @@ for (di in 1:dataset_num) {
     knots = knot.list[[1]], Boundary.knots = boundary.knot,
     degree = 2, intercept = TRUE
   )
-  # spline.basis <- spline.basis[,3:(dfi-2)]
   points <- spline.basis %*% coefs[-(1:nX), 1, indice]
   est <- apply(points, 1, function(x) {
     c(
@@ -337,7 +316,6 @@ for (di in 1:dataset_num) {
   Q50[di, 4] <- sum(Q50[di, 5:6])
 
   CI_repeat[di, , ] <- as.matrix(est)
-  # coef_repeat[di,,] <- t(coefs[,1,indice])
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     coefs[1:nX, 1, indice], 1,
@@ -347,8 +325,6 @@ for (di in 1:dataset_num) {
   CI_covariate_repeat[di, , 7] <- t(apply(coefs[1:nX, 1, indice], 1, var))
   CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
   CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
-
-  # coef_repeat_flex[di,,] <- t(coefs[,1,indice])
 
   RE_repeat[di, , 1:3] <- t(apply(
     REs[, , indice], c(1, 2),

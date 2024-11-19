@@ -26,7 +26,6 @@ true_fixed_effect <- matrix(c(
   +0.1, +0.1, +0.5
 ), nrow = 3, ncol = 3, byrow = TRUE)
 nX <- 3
-# true_fixed_effect <- matrix(c(0,0,0),1,3)
 a0 <- 1
 b0 <- 70
 d0 <- 4
@@ -56,7 +55,6 @@ true_Q50 <- rep(0, dataset_num)
 coef_repeat_S <- array(0, dim = c(dataset_num, 5000, 4 + 20))
 
 RE_repeat <- array(0, dim = c(dataset_num, N, 7))
-# RE + fixed intercept
 offset_repeat <- array(0, dim = c(dataset_num, N, 7))
 
 sigmay_repeat <- array(0, dim = c(dataset_num, 7))
@@ -93,9 +91,6 @@ for (di in 1:dataset_num) {
     X3 = rnorm(N)
   )
   X_names <- colnames(X)
-  # X <- matrix(0, nrow(X), ncol(X))
-  # X <- matrix(rep(1,N),N,1)
-  # colnames(X) <- c('intercept')
   df <- cbind(df, X[df$id, ])
 
   Y <- as.matrix(df[, X_names]) %*% true_fixed_effect
@@ -140,7 +135,6 @@ for (di in 1:dataset_num) {
   covar.list <- as.list(rep(NA, K))
   knot.list <- as.list(rep(NA, K))
   boundary.knot <- c(0, 120) # range(t)
-  # remove <- 2# Removing the first .. and last .. basis
   for (i in 1:K) {
     # Calculate knot points
     t01 <- (t - boundary.knot[1]) / (boundary.knot[2] - boundary.knot[1])
@@ -151,9 +145,6 @@ for (di in 1:dataset_num) {
       knots = knot.list[[i]], Boundary.knots = boundary.knot,
       degree = 2, intercept = TRUE
     ) # IBSpline Basis
-    # B <- iSpline(t, knots=knot.list[[i]], Boundary.knots = boundary.knot,
-    #             degree=2, intercept=TRUE) # IBSpline Basis
-    # B <- B/min(apply(B,2,max))
     B <- B[, (3):(ncol(B) - 2)]
     covar.list[[i]] <- cbind(X, B)
   }
@@ -185,7 +176,7 @@ for (di in 1:dataset_num) {
   # Beta parameter: Coefficients for adjusting covariates
   beta.prior <- list(
     mean = rep(0, ncol(X)),
-    variance = diag(rep(10000, ncol(X))),
+    variance = ifelse(ncol(X) > 1, rep(10000, ncol(X)), matrix(10000)),
     # variance=10000,
     precision = NULL
   )
@@ -208,7 +199,6 @@ for (di in 1:dataset_num) {
   # Fixed Effect of X & All-positive Spline Coefs
   coefs <- array(0, c(ncol(covar.list[[1]]), ncol(Y), R))
   nX <- ncol(X)
-  # inflex_prob <- array(0,c(ncol(covar.list[[1]])-nX,ncol(Y),R))
   # Variance of Biomarkers
   sigmays <- rep(0, R)
   sigmaws <- rep(0, R)
@@ -229,12 +219,9 @@ for (di in 1:dataset_num) {
       )$V,
       lb = rep(0, ncol(B))
     ))
-  sigmays[] <- residual_var # 1/rgamma(1,shape=3,rate=0.5)
+  sigmays[] <- residual_var
   pens[, 1] <- c(0.1, 0.5)
-  sigmaws[] <- random_effect_var # 1/rgamma(1,shape=3,rate=0.5)
-  # REs[,,1] <- array(rnorm(prod(dim(long_ss))),
-  #                   dim=dim(long_ss))
-
+  sigmaws[] <- random_effect_var
   # Prior density for penalties
   lpd <- function(s) {
     log(2) + dnorm(s[1], sd = 1 / (dfi - 4), log = TRUE) +
@@ -244,8 +231,6 @@ for (di in 1:dataset_num) {
   acc <- 0 # Accepted Proposals in one batch
   lss <- ls # Sequence of LS for reference
   w <- planck_taper(ncol(B), eps = 0.1) # Window Function
-  # w <- rep(1,ncol(B))
-  # w <- NULL
 
   M_coef <- lincon(nX + dfi - 4, nX)
   M_pen <- lincon(dfi - 4, 0)
@@ -278,8 +263,6 @@ for (di in 1:dataset_num) {
       covar.list, Y, as.matrix(coefs[, , i + 1], ncol = K), long_ss,
       df$ID, sigmays[i + 1], sigmaws[i]
     )
-    # inflex_prob[,,i+1] <- u$inflex_prob
-    # current <- "Penalty"
     new_pens <- update_pens(
       gamma = as.matrix(coefs[(nX + 1):ncol(covar.list[[1]]), , i + 1], ncol = 1),
       mu = gamma.prior$mean,
@@ -303,7 +286,6 @@ for (di in 1:dataset_num) {
       acc <- 0
       lss <- c(lss, ls)
     }
-    # pens[,i+1] <- pens[,i]
     sigmaws[i + 1] <- update_sigmaw(REs[, , i + 1], 3, 0.5)
   }
 
@@ -365,9 +347,6 @@ for (di in 1:dataset_num) {
   CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
   CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
 
-
-
-  # coef_repeat_S[di,,] <- t(coefs[,1,indice])
   RE_repeat[di, , 1:3] <- t(apply(
     REs, c(1, 2),
     function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2)))
