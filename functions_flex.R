@@ -203,10 +203,6 @@ update_coef <- function(covars.list, nX, Y, RE, sy, sw, id, prior.mean, prior.pr
     mu <- mu + t(CC) %*% lik_prec %*% Y[, k][non_mis]
 
     mu <- as.vector(variance %*% mu)
-    # res[,k] <- rtmvnorm(1,mu,variance,
-    #                     lb=c(rep(-Inf,nX),rep(0,ncol(covars.list[[k]])-nX))
-    # )
-    # res[,k] <- rtMVN(mu,variance,(nX+1):length(mu),FALSE)
     res[, , k] <- hdtg::harmonicHMC(samples, burnin, mu, chol(variance),
       diag(length(mu))[-(1:nX), ], rep(0, length(mu) - nX),
       rep(0.1, length(mu)),
@@ -277,7 +273,6 @@ update_pens <- function(
   ll2 <- sum(dtmvnorm(t(gamma), mu, V2, lb = rep(0, p), log = TRUE)) + lpd(new)
 
   diff <- ll - sum(log(new)) - ll2 + sum(log(lambda))
-  # diff <- ll - ll2
   temp <- rexp(1)
   if (temp > diff) {
     acc_status <- 1

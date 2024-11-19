@@ -438,7 +438,6 @@ update_pens <- function(
   ll2 <- sum(dmvnorm(t(gamma), mu, V2, log = TRUE) - logSumExp(puMVN(mu, V2, 0, Ms, verbose = verbose))) + lpd(new)
 
   diff <- ll - sum(log(new)) - ll2 + sum(log(lambda))
-  # diff <- ll - ll2
   temp <- rexp(1)
   if (temp > diff) {
     acc_status <- 1
@@ -486,7 +485,6 @@ update_W <- function(covars.list, Y, coefs, long_ss, ID,
 
 lwmean <- function(a, b, w = 1 / 2) {
   require(matrixStats)
-  # require(Rmpfr)
   a0 <- a + log(w)
   b0 <- b + log(1 - w)
   mat <- rbind(a0, b0)
@@ -496,7 +494,6 @@ lwmean <- function(a, b, w = 1 / 2) {
 logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
   require(matrixStats)
   require(VGAM)
-  # require(Rmpfr)
   precision <- 100
   a <- lb - mu
   b <- ub - mu
