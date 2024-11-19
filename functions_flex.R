@@ -111,7 +111,6 @@ f_sigmoid <- function(t, a = 1, b = 0, d = 1) {
 # 2. General S-shape
 
 f_sshape <- function(t, mode = 0.5, range_L = 0, range_R = 1) {
-  # return(ptri(t,range_L,range_R,mode))
   result <- rep(0, length(t))
   for (j in seq_along(t)) {
     if (t[j] < range_L) {
