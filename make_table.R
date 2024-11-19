@@ -1,4 +1,4 @@
-mother_dir <- "/users/mli1/simulation/95Result_moreflex_s1s2_0.01"
+mother_dir <- "."
 setwd(mother_dir)
 col_names <- c(
   "Truth", "Model", "Bounds",
