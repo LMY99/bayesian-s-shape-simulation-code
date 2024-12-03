@@ -178,7 +178,7 @@ for (di in 1:dataset_num) {
   # Beta parameter: Coefficients for adjusting covariates
   beta.prior <- list(
     mean = rep(0, ncol(X)),
-    variance = ifelse(ncol(X) > 1, rep(10000, ncol(X)), matrix(10000)),
+    variance = diag(ncol(X)) * 10000,
     precision = NULL
   )
   beta.prior$precision <- solve(beta.prior$variance)
