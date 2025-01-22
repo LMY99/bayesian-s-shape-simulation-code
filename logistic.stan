@@ -27,9 +27,9 @@ model {
   }
   sigmarandom ~ inv_gamma(3,0.5);
   sigmaerror ~ inv_gamma(3,0.5);
-  lscale ~ inv_gamma(3, 0.5);
-  lpos ~ normal(0, 100);
-  lamp ~ inv_gamma(3, 0.5);
+  lscale ~ normal(5, 1);
+  lpos ~ normal(70, 30);
+  lamp ~ normal(2, 1);
   for(n in 1:Nout){
     for(j in 1:Nind){
       randomint[n,j] ~ normal(0,sqrt(sigmarandom));
