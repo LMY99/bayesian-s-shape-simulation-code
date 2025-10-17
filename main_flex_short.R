@@ -1,14 +1,18 @@
 args <- commandArgs(trailingOnly = TRUE)
 seed <- as.integer(args[1])
 set.seed(seed)
-
+setting <- as.integer(args[2])
+# setting = 1: baseline age [50, 70], N = 250, Poisson(10)
+# setting = 2: baseline age [35, 90], N = 250, Poisson(10)
+# setting = 3: baseline age [50, 70], N = 750, Poisson(5)
+true_curve <- as.integer(args[3])
 source("functions_flex.R")
 
-start_time_low <- 50
-start_time_upper <- 90 # Normal
+start_time_low <- ifelse(setting==2, 35, 50)
+start_time_upper <- ifelse(setting==2, 90, 70) # Normal
 interval_time_min <- 1
 interval_time_exp_rate <- 20 # 1+Exp(rate)
-num_visits_mean <- 10 # Poisson
+num_visits_mean <- ifelse(setting==3, 5, 10) # Poisson
 N_cont_covars <- 2 # N(0,1) continous covariates
 N_binary_covars <- 2
 p_binary_covars <- c(1, 0.5)
@@ -16,10 +20,10 @@ random_effect_var <- 1
 residual_var <- 0.5
 
 true_fixed_effect <- matrix(c(
-  +0.4, +0.4, -0.5,
-  -0.5, -0.5, +0.1,
-  +0.1, +0.1, +0.5
-), nrow = 3, ncol = 3, byrow = TRUE)
+  +0.4, +0.4, +0.4, +0.4,
+  -0.5, -0.5, -0.5, -0.5,
+  +0.1, +0.1, +0.1, +0.1
+), nrow = 3, ncol = 4, byrow = TRUE)
 nX <- 3
 a0 <- 1
 b0 <- 70
@@ -34,7 +38,7 @@ sd2 <- 5
 p1 <- 0.4
 p2 <- 0.6
 
-N <- 250
+N <- ifelse(setting==3, 750, 250)
 
 dataset_num <- 1
 
@@ -84,29 +88,32 @@ for (di in 1:dataset_num) {
   df <- cbind(df, X[df$id, ])
 
   Y <- as.matrix(df[, X_names]) %*% true_fixed_effect
-  truthRE <- matrix(rnorm(N * 3, sd = sqrt(random_effect_var)), nrow = N, ncol = ncol(Y))
+  truthRE <- matrix(rnorm(N * 4, sd = sqrt(random_effect_var)), nrow = N, ncol = ncol(Y))
   Y <- Y + matrix(rnorm(length(Y), sd = sqrt(residual_var)), nrow = nrow(Y), ncol = ncol(Y))
   Y <- Y + truthRE[df$id, ]
 
   coef00 <- c(0, 0, c(1, 4, 7, 1) / 100, 0, 0)
   B00 <- splines2::ibs(df$ageori, knots = knot, degree = 2, intercept = TRUE, Boundary.knots = c(0, 120))
 
-  Y[, 1] <- Y[, 1] + f_sigmoid(df$ageori, 2, 70, 5) # B00 %*% coef00
-  Y[, 2] <- Y[, 2] + f_sshape(df$ageori, mode1, range_L1, range_R1)
-  Y[, 3] <- Y[, 3] + f_wiggle(df$ageori, mean1, sd1, mean2, sd2, p1, p2)
-  colnames(Y) <- c("Y1", "Y2", "Y3")
-
-  mis <- missing_pattern(nrow(Y), 3, 1 / 5, 1 / 10)
+  Y[, 1] <- Y[, 1] + 2 * plogis(df$ageori, location = 65, scale = 2)
+  Y[, 2] <- Y[, 2] + 2 * plogis((df$ageori-65)/2 - log(2^2.5-1))^0.4
+  Y[, 3] <- Y[, 3] + 2 * plogis((df$ageori-65)/2 - log(2^4-1))^0.25
+  Y[, 4] <- Y[, 4] + plogis(df$ageori, location = 60, scale = 1.5) +
+    plogis(df$ageori, location = 72, scale = 1.5)
+  colnames(Y) <- c("Y1", "Y2", "Y3", "Y4")
+  
+  mis <- missing_pattern(nrow(Y), 4, 1 / 5, 1 / 10)
   for (i in 1:nrow(Y)) {
     for (j in 1:ncol(Y)) {
       if (mis[i, j]) Y[i, j] <- NA
     }
   }
-
-  Y <- Y[, 1]
-  mis <- mis[, 1]
-  truthRE0 <- truthRE[df$id, 2]
+  
+  Y <- Y[, true_curve]
+  mis <- mis[, true_curve]
+  truthRE0 <- truthRE[df$id, true_curve]
   df <- cbind(df, Y, truthRE0)
+  
 
   usePackage("splines2")
   usePackage("TruncatedNormal")
@@ -366,7 +373,7 @@ for (di in 1:dataset_num) {
 save(CI_repeat, CI_covariate_repeat, RE_repeat, offset_repeat,
   Q50, true_Q50,
   sigmay_repeat, sigmaw_repeat,
-  file = sprintf("sflex_CIs_%03d.rda", seed)
+  file = sprintf("sflex_CIs_%03d_%d%d.rda", seed, setting, true_curve)
 )
 covered <- apply(CI_repeat, c(1, 2), function(x) (x[4] - x[2]) * (x[4] - x[3]) <= 0)
 cover_rate <- apply(covered, 2, mean)
