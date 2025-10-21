@@ -105,10 +105,10 @@ for (di in 1:dataset_num) {
 
   coef00 <- c(0, 0, c(1, 4, 7, 1) / 100, 0, 0)
   B00 <- splines2::ibs(df$ageori, knots = knot, degree = 2, intercept = TRUE, Boundary.knots = c(0, 120))
-
-  Y[, 1] <- Y[, 1] + 2 * plogis(df$ageori, location = 65, scale = 2)
-  Y[, 2] <- Y[, 2] + 2 * plogis((df$ageori-65)/2 - log(2^2.5-1))^0.4
-  Y[, 3] <- Y[, 3] + 2 * plogis((df$ageori-65)/2 - log(2^4-1))^0.25
+  age_scaled <- (df$ageori - 65)/2
+  Y[, 1] <- Y[, 1] + 2 * plogis(age_scaled)
+  Y[, 2] <- Y[, 2] + 2 * plogis(age_scaled * exp(0.5 * age_scaled / sqrt(age_scaled^2+1)))
+  Y[, 3] <- Y[, 3] + 2 * plogis(age_scaled * exp(1.0 * age_scaled / sqrt(age_scaled^2+1)))
   Y[, 4] <- Y[, 4] + plogis(df$ageori, location = 60, scale = 1.5) +
     plogis(df$ageori, location = 72, scale = 1.5)
   colnames(Y) <- c("Y1", "Y2", "Y3", "Y4")
