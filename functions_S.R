@@ -306,7 +306,7 @@ hdtg_S <- function(n, mu, sigma, free = NULL, burnin = 5) {
     result[inflex.points == i, ] <- hdtg::harmonicHMC(
       n = pnums, burnin = burnin,
       mean = mu, choleskyFactor = chol(sigma),
-      F = Fmat, g = g, init = init, precFlg = FALSE
+      constrainDirec = Fmat, constrainBound = g, init = init, precFlg = FALSE
     )
   }
   if (n == 1) {
@@ -345,7 +345,7 @@ puMVN <- function(mu, V, q, Ms, k = NULL, eps = 1e-2, log = T, verbose = FALSE) 
 # Update BETA and GAMMA together
 # RE is the replicated random effects, and should always be the same dimension as Y
 update_coef <- function(covars.list, nX, Y, RE, sy, sw, id, prior.mean, prior.precision, Ms, verbose = FALSE,
-                        samples = 1, burnin = 5) {
+                        samples = 1, burnin = 5, alpha = 1) {
   require(matrixStats)
   res <- array(0, c(samples, ncol(covars.list[[1]]), ncol(Y)))
   unique_id <- unique(id)
@@ -358,13 +358,13 @@ update_coef <- function(covars.list, nX, Y, RE, sy, sw, id, prior.mean, prior.pr
       block_size[j] <- sum(comp_id == j)
     }
     lik_prec <- exchangable_cov(sy, sw, block_size)$Prec
-    precision <- prior.precision + t(CC) %*% lik_prec %*% CC
+    precision <- prior.precision + t(CC) %*% lik_prec %*% CC * alpha
     variance <- solve(precision)
 
     mu <- as.vector(precision %*% prior.mean)
     mu <- mu + t(CC) %*% lik_prec %*% Y[, k][non_mis]
 
-    mu <- as.vector(variance %*% mu)
+    mu <- as.vector(variance %*% mu * alpha)
     if (nX > 0) {
       free_indice <- 1:nX
     } else {
@@ -375,14 +375,14 @@ update_coef <- function(covars.list, nX, Y, RE, sy, sw, id, prior.mean, prior.pr
   return(list(res = res))
 }
 # Update SIGMA_Y----
-update_sigmay <- function(covars.list, Y, RE, coefs, prior.shape, prior.scale) {
+update_sigmay <- function(covars.list, Y, RE, coefs, prior.shape, prior.scale, alpha = 1) {
   residual <- array(0, dim(Y))
   for (k in 1:ncol(Y)) {
     residual[, k] <- Y[, k] - RE[, k] - drop(covars.list[[k]] %*% coefs[, k])
   }
   return(1 / rgamma(1,
-    shape = prior.shape + sum(!is.na(Y)) / 2,
-    rate = prior.scale + sum(residual^2, na.rm = TRUE) / 2
+    shape = prior.shape + sum(!is.na(Y)) / 2 * alpha,
+    rate = prior.scale + sum(residual^2, na.rm = TRUE) / 2 * alpha
   ))
 }
 # Update PENALTIES----
@@ -466,17 +466,17 @@ update_sigmaw <- function(W, prior.shape, prior.scale) {
 }
 # Update Individual Random Intercept----
 update_W <- function(covars.list, Y, coefs, long_ss, ID,
-                     sigmay, sigmaw) {
+                     sigmay, sigmaw, alpha = 1) {
   residual <- array(0, dim(Y))
   for (k in 1:ncol(Y)) {
     residual[, k] <- Y[, k] - drop(covars.list[[k]] %*% coefs[, k])
   }
-  sds <- (1 / sigmaw + long_ss / sigmay)^(-1 / 2)
+  sds <- (1 / sigmaw + alpha * long_ss / sigmay)^(-1 / 2)
   means <- matrix(0, nrow = nrow(long_ss), ncol = ncol(long_ss))
   for (k in 1:ncol(long_ss)) {
     means[, k] <- tapply(residual[, k], ID, sum, na.rm = TRUE)
   }
-  means <- means / (sigmay / sigmaw + long_ss)
+  means <- means / (sigmay / sigmaw / alpha + long_ss)
   norms <- array(rnorm(prod(dim(long_ss))),
     dim = dim(long_ss)
   )
