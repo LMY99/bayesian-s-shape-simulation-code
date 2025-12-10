@@ -7,6 +7,7 @@ setting <- as.integer(args[2])
 # setting = 2: baseline age [35, 90], N = 250, Poisson(10)
 # setting = 3: baseline age [50, 70], N = 750, Poisson(5)
 true_curve <- as.integer(args[3])
+power_alpha <- as.double(args[4])
 source("functions_S.R")
 usePackage("splines2")
 usePackage("TruncatedNormal")
@@ -258,18 +259,18 @@ for (di in 1:dataset_num) {
     sigmays[i + 1] <- update_sigmay(
       covar.list, Y, as.matrix(REs[df$ID, , i], ncol = 1),
       as.matrix(coefs[, , i], ncol = 1),
-      3, 0.5
+      3, 0.5, alpha = power_alpha
     )
     u <- update_coef(covar.list, nX, Y, as.matrix(REs[df$ID, , i], ncol = 1),
       sigmays[i + 1], sigmaws[i], df$ID,
       coef.prior$mean,
       prec, M_coef, verbose,
-      samples = 1
+      samples = 1, alpha = power_alpha
     )
     coefs[, , i + 1] <- aperm(u$res, c(2, 3, 1))
     REs[, , i + 1] <- update_W(
       covar.list, Y, as.matrix(coefs[, , i + 1], ncol = K), long_ss,
-      df$ID, sigmays[i + 1], sigmaws[i]
+      df$ID, sigmays[i + 1], sigmaws[i], alpha = power_alpha
     )
     new_pens <- update_pens(
       gamma = as.matrix(coefs[(nX + 1):ncol(covar.list[[1]]), , i + 1], ncol = 1),
