@@ -3,3 +3,5 @@
 .Rproj.user
 *.rda
 *.pdf
+
+*.rdata

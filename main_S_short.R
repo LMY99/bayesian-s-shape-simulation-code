@@ -349,7 +349,7 @@ for (di in 1:dataset_num) {
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     coefs[1:nX, 1, indice], 1,
-    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
+    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   ))
   CI_covariate_repeat[di, , 4] <- c(0.4, -0.5, 0.1)
   CI_covariate_repeat[di, , 7] <- t(apply(coefs[1:nX, 1, indice], 1, var))
@@ -358,7 +358,7 @@ for (di in 1:dataset_num) {
 
   RE_repeat[di, , 1:3] <- t(apply(
     REs, c(1, 2),
-    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
+    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   )[, , 1])
   RE_repeat[di, , 4] <- truthRE[, 2]
   RE_repeat[di, , 7] <- t(apply(REs[, , indice], 1, var))
@@ -367,7 +367,7 @@ for (di in 1:dataset_num) {
 
   offset_repeat[di, , 1:3] <- t(apply(
     offsets, c(1, 2),
-    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
+    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   )[, , 1])
   offset_repeat[di, , 4] <- truthRE[, 2] + 0.4
   offset_repeat[di, , 7] <- t(apply(offsets[, , indice], 1, var))

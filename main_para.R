@@ -186,7 +186,7 @@ for (di in 1:dataset_num) {
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     stan.array$beta[, 1, ], 2,
-    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
+    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   ))
   CI_covariate_repeat[di, , 4] <- c(0.4, -0.5, 0.1)
   CI_covariate_repeat[di, , 7] <- t(apply(stan.array$beta[, 1, ], 2, var))
@@ -195,7 +195,7 @@ for (di in 1:dataset_num) {
 
   RE_repeat[di, , 1:3] <- t(apply(
     stan.array$randomint[, 1, ], 2,
-    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
+    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   ))
   RE_repeat[di, , 4] <- truthRE[, 2]
   RE_repeat[di, , 7] <- t(apply(stan.array$randomint[, 1, ], 2, var))
@@ -209,7 +209,7 @@ for (di in 1:dataset_num) {
 
   offset_repeat[di, , 1:3] <- t(apply(
     offsets, 2,
-    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
+    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   ))
   offset_repeat[di, , 4] <- truthRE[, 2] + 0.4
   offset_repeat[di, , 7] <- t(apply(offsets, 2, var))
