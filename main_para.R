@@ -164,7 +164,7 @@ for (di in 1:dataset_num) {
     }
   }
   ci_level <- 0.95
-  est <- apply(points, 1, function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))))
+  est <- apply(points, 1, function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE)))
   var_est <- apply(points, 1, var)
   est <- data.frame(t(est))
   colnames(est) <- c("avg", "lower", "upper")
@@ -175,7 +175,7 @@ for (di in 1:dataset_num) {
   est$var <- var_est
 
   Q50s <- stan.array$lpos
-  Q50[di, 1:2] <- quantile(Q50s, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+  Q50[di, 1:2] <- HDInterval::hdi(density(Q50s, from = 0), credMass = ci_level, allowSplit = FALSE)
   Q50[di, 3] <- mean(Q50s)
   true_Q50[di] <- b0
   Q50[di, 5] <- (Q50[di, 3] - true_Q50[di])^2
@@ -186,7 +186,7 @@ for (di in 1:dataset_num) {
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     stan.array$beta[, 1, ], 2,
-    function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2)))
+    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
   ))
   CI_covariate_repeat[di, , 4] <- c(0.4, -0.5, 0.1)
   CI_covariate_repeat[di, , 7] <- t(apply(stan.array$beta[, 1, ], 2, var))
@@ -195,7 +195,7 @@ for (di in 1:dataset_num) {
 
   RE_repeat[di, , 1:3] <- t(apply(
     stan.array$randomint[, 1, ], 2,
-    function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2)))
+    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
   ))
   RE_repeat[di, , 4] <- truthRE[, 2]
   RE_repeat[di, , 7] <- t(apply(stan.array$randomint[, 1, ], 2, var))
@@ -209,7 +209,7 @@ for (di in 1:dataset_num) {
 
   offset_repeat[di, , 1:3] <- t(apply(
     offsets, 2,
-    function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2)))
+    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
   ))
   offset_repeat[di, , 4] <- truthRE[, 2] + 0.4
   offset_repeat[di, , 7] <- t(apply(offsets, 2, var))
@@ -217,7 +217,7 @@ for (di in 1:dataset_num) {
   offset_repeat[di, , 5] <- offset_repeat[di, , 6] + offset_repeat[di, , 7]
 
   sigmay_repeat[di, 1] <- mean(stan.array$sigmaerror)
-  sigmay_repeat[di, 2:3] <- quantile(stan.array$sigmaerror, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+  sigmay_repeat[di, 2:3] <- HDInterval::hdi(density(stan.array$sigmaerror, from = 0), credMass = ci_level, allowSplit = FALSE)
   sigmay_repeat[di, 4] <- residual_var
   sigmay_repeat[di, 6:7] <- c(
     (sigmay_repeat[di, 1] - sigmay_repeat[di, 4])^2,
@@ -225,7 +225,7 @@ for (di in 1:dataset_num) {
   )
   sigmay_repeat[di, 5] <- sum(sigmay_repeat[di, 6:7])
   sigmaw_repeat[di, 1] <- mean(stan.array$sigmarandom)
-  sigmaw_repeat[di, 2:3] <- quantile(stan.array$sigmarandom, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+  sigmaw_repeat[di, 2:3] <- HDInterval::hdi(density(stan.array$sigmarandom, from = 0), credMass = ci_level, allowSplit = FALSE)
   sigmaw_repeat[di, 4] <- random_effect_var
   sigmaw_repeat[di, 6:7] <- c(
     (sigmaw_repeat[di, 1] - sigmaw_repeat[di, 4])^2,
@@ -236,7 +236,7 @@ for (di in 1:dataset_num) {
   true_turning[di] <- 70
   turning[di, 1:3] <- c(
     mean(stan.array$lpos),
-    quantile(stan.array$lpos, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+    HDInterval::hdi(density(stan.array$lpos, from = 0), credMass = ci_level, allowSplit = FALSE)
   )
   turning[di, 5] <- (turning[di, 1] - true_turning[di])^2
   turning[di, 6] <- var(stan.array$lpos)
@@ -244,12 +244,12 @@ for (di in 1:dataset_num) {
   true_amp[di] <- 2
   amp[di, ] <- c(
     mean(stan.array$lamp),
-    HDInterval::hdi(stan.array$lamp)
+    HDInterval::hdi(density(stan.array$lamp, from = 0), credMass = ci_level, allowSplit = FALSE)
   )
   true_scales[di] <- 5
   scales[di, ] <- c(
     mean(stan.array$lscale),
-    HDInterval::hdi(stan.array$lscale)
+    HDInterval::hdi(density(stan.array$lscale, from = 0), credMass = ci_level, allowSplit = FALSE)
   )
 }
 
@@ -261,7 +261,7 @@ save(CI_repeat, turning, true_turning, CI_covariate_repeat, RE_repeat, offset_re
 covered <- apply(CI_repeat, c(1, 2), function(x) (x[4] - x[2]) * (x[4] - x[3]) <= 0)
 cover_rate <- apply(covered, 2, mean)
 
-sink("Parametric_specs.txt")
-cat(paste("Amplitude: True value =", mean(true_amp), "Coverage = ", mean((amp[, 2] - true_amp) * (amp[, 3] - true_amp) <= 0)))
-cat(paste("Scale: True value =", mean(true_scales), "Coverage = ", mean((scales[, 2] - true_scales) * (scales[, 3] - true_scales) <= 0)))
-sink()
+# sink("Parametric_specs.txt")
+# cat(paste("Amplitude: True value =", mean(true_amp), "Coverage = ", mean((amp[, 2] - true_amp) * (amp[, 3] - true_amp) <= 0)))
+# cat(paste("Scale: True value =", mean(true_scales), "Coverage = ", mean((scales[, 2] - true_scales) * (scales[, 3] - true_scales) <= 0)))
+# sink()

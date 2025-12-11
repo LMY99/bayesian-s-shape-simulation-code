@@ -314,7 +314,7 @@ for (di in 1:dataset_num) {
   )
   spline.basis <- spline.basis[, 3:(dfi - 2)]
   points <- spline.basis %*% coefs[-(1:nX), 1, indice]
-  est <- apply(points, 1, function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))))
+  est <- apply(points, 1, function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE)))
   var_est <- apply(points, 1, var)
   est <- data.frame(t(est))
   colnames(est) <- c("avg", "lower", "upper")
@@ -328,7 +328,7 @@ for (di in 1:dataset_num) {
     ages[max(which(diff(x, differences = 2) > 0)) + 1]
   })
 
-  turning[di, 1:2] <- quantile(inflects, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+  turning[di, 1:2] <- HDInterval::hdi(density(inflects, from = 0), credMass = ci_level, allowSplit = FALSE)
   turning[di, 3] <- mean(inflects)
   true_turning[di] <- ages[max(which(diff(est$truth, differences = 2) > 0)) + 1]
   turning[di, 5] <- (turning[di, 3] - true_turning[di])^2
@@ -338,7 +338,7 @@ for (di in 1:dataset_num) {
   Q50s <- apply(points, 2, function(x) {
     ages[min(which(x >= max(x) / 2))]
   })
-  Q50[di, 1:2] <- quantile(Q50s, c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+  Q50[di, 1:2] <- HDInterval::hdi(density(Q50s, from = 0), credMass = ci_level, allowSplit = FALSE)
   Q50[di, 3] <- mean(Q50s)
   true_Q50[di] <- b0
   Q50[di, 5] <- (Q50[di, 3] - true_Q50[di])^2
@@ -349,7 +349,7 @@ for (di in 1:dataset_num) {
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     coefs[1:nX, 1, indice], 1,
-    function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2)))
+    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
   ))
   CI_covariate_repeat[di, , 4] <- c(0.4, -0.5, 0.1)
   CI_covariate_repeat[di, , 7] <- t(apply(coefs[1:nX, 1, indice], 1, var))
@@ -358,7 +358,7 @@ for (di in 1:dataset_num) {
 
   RE_repeat[di, , 1:3] <- t(apply(
     REs, c(1, 2),
-    function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2)))
+    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
   )[, , 1])
   RE_repeat[di, , 4] <- truthRE[, 2]
   RE_repeat[di, , 7] <- t(apply(REs[, , indice], 1, var))
@@ -367,7 +367,7 @@ for (di in 1:dataset_num) {
 
   offset_repeat[di, , 1:3] <- t(apply(
     offsets, c(1, 2),
-    function(x) c(mean(x), quantile(x, c(0.5 - ci_level / 2, 0.5 + ci_level / 2)))
+    function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE))
   )[, , 1])
   offset_repeat[di, , 4] <- truthRE[, 2] + 0.4
   offset_repeat[di, , 7] <- t(apply(offsets[, , indice], 1, var))
@@ -375,7 +375,7 @@ for (di in 1:dataset_num) {
   offset_repeat[di, , 5] <- offset_repeat[di, , 6] + offset_repeat[di, , 7]
 
   sigmay_repeat[di, 1] <- mean(sigmays[indice])
-  sigmay_repeat[di, 2:3] <- quantile(sigmays[indice], c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+  sigmay_repeat[di, 2:3] <- HDInterval::hdi(density(sigmays[indice], from = 0), credMass = ci_level, allowSplit = FALSE)
   sigmay_repeat[di, 4] <- residual_var
   sigmay_repeat[di, 6:7] <- c(
     (sigmay_repeat[di, 1] - sigmay_repeat[di, 4])^2,
@@ -384,7 +384,7 @@ for (di in 1:dataset_num) {
   sigmay_repeat[di, 5] <- sum(sigmay_repeat[di, 6:7])
 
   sigmaw_repeat[di, 1] <- mean(sigmaws[indice])
-  sigmaw_repeat[di, 2:3] <- quantile(sigmaws[indice], c(0.5 - ci_level / 2, 0.5 + ci_level / 2))
+  sigmaw_repeat[di, 2:3] <- HDInterval::hdi(density(sigmaws[indice], from = 0), credMass = ci_level, allowSplit = FALSE)
   sigmaw_repeat[di, 4] <- random_effect_var
   sigmaw_repeat[di, 6:7] <- c(
     (sigmaw_repeat[di, 1] - sigmaw_repeat[di, 4])^2,
