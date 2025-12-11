@@ -146,7 +146,7 @@ for (di in 1:dataset_num) {
   )
 
   options(mc.cores = parallel::detectCores())
-  rstan_options(auto_write = TRUE)
+  rstan_options(auto_write = FALSE)
 
   stan.fit <- stan(file = "logistic.stan", data = dat, iter = R, chains = 1, seed = 419)
   stan.array <- rstan::extract(stan.fit)

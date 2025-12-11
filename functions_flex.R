@@ -303,7 +303,7 @@ update_sigmaw <- function(W, prior.shape, prior.scale) {
 }
 # Update Individual Random Intercept----
 update_W <- function(covars.list, Y, coefs, long_ss, ID,
-                     sigmay, sigmaw) {
+                     sigmay, sigmaw, alpha = 1) {
   residual <- array(0, dim(Y))
   for (k in 1:ncol(Y)) {
     residual[, k] <- Y[, k] - drop(covars.list[[k]] %*% coefs[, k])
