@@ -289,6 +289,7 @@ for (di in 1:dataset_num) {
   ages <- seq(0, 120, by = 0.1)
   points <- array(0, c(length(ages), R - Burnin))
 
+  save.image(file='test.rdata')
   indice <- (Burnin + 1):R
   spline.basis <- splines2::ibs(pmin(pmax(ages, min(boundary.knot)), max(boundary.knot)),
     knots = knot.list[[1]], Boundary.knots = boundary.knot,
@@ -332,18 +333,18 @@ for (di in 1:dataset_num) {
   CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
 
   RE_repeat[di, , 1:3] <- t(apply(
-    REs[, , indice], c(1, 2),
+    REs[, , indice], 1,
     function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
-  )[, , 1])
+  ))
   RE_repeat[di, , 4] <- truthRE[, 2]
   RE_repeat[di, , 7] <- t(apply(REs[, , indice], 1, var))
   RE_repeat[di, , 6] <- (RE_repeat[di, , 1] - RE_repeat[di, , 4])^2
   RE_repeat[di, , 5] <- RE_repeat[di, , 6] + RE_repeat[di, , 7]
 
   offset_repeat[di, , 1:3] <- t(apply(
-    offsets[, , indice], c(1, 2),
+    offsets[, , indice], 1,
     function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
-  )[, , 1])
+  ))
   offset_repeat[di, , 4] <- truthRE[, 2] + 0.4
   offset_repeat[di, , 7] <- t(apply(offsets[, , indice], 1, var))
   offset_repeat[di, , 6] <- (offset_repeat[di, , 1] - offset_repeat[di, , 4])^2

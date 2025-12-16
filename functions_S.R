@@ -306,7 +306,7 @@ hdtg_S <- function(n, mu, sigma, free = NULL, burnin = 5) {
     result[inflex.points == i, ] <- hdtg::harmonicHMC(
       n = pnums, burnin = burnin,
       mean = mu, choleskyFactor = chol(sigma),
-      constrainDirec = Fmat, constrainBound = g, init = init, precFlg = FALSE
+      F = Fmat, g = g, init = init, precFlg = FALSE
     )
   }
   if (n == 1) {
