@@ -105,12 +105,17 @@ for (di in 1:dataset_num) {
 
   coef00 <- c(0, 0, c(1, 4, 7, 1) / 100, 0, 0)
   B00 <- splines2::ibs(df$ageori, knots = knot, degree = 2, intercept = TRUE, Boundary.knots = c(0, 120))
-  age_scaled <- (df$ageori - 65)/2
-  Y[, 1] <- Y[, 1] + 2 * plogis(age_scaled)
-  Y[, 2] <- Y[, 2] + 2 * plogis(age_scaled * exp(0.5 * age_scaled / sqrt(age_scaled^2+1)))
-  Y[, 3] <- Y[, 3] + 2 * plogis(age_scaled * exp(1.0 * age_scaled / sqrt(age_scaled^2+1)))
-  Y[, 4] <- Y[, 4] + plogis(df$ageori, location = 60, scale = 1.5) +
-    plogis(df$ageori, location = 72, scale = 1.5)
+  age_scaled <- list(
+    (df$ageori - 60)/6,
+    (df$ageori - 72)/6,
+    (df$ageori - 82)/4,
+    (df$ageori - 60)/3.75
+  )
+  Y[, 1] <- Y[, 1] + 2 * plogis(age_scaled[[1]])
+  Y[, 2] <- Y[, 2] + 2 * plogis(age_scaled[[2]] * exp(0.5 * age_scaled[[2]] / sqrt(age_scaled[[2]]^2+1)))
+  Y[, 3] <- Y[, 3] + 2 * plogis(age_scaled[[3]] * exp(1.0 * age_scaled[[3]] / sqrt(age_scaled[[3]]^2+1)))
+  Y[, 4] <- Y[, 4] + plogis(age_scaled[[4]], location = -4, scale = 1) +
+    plogis(age_scaled[[4]], location = +4, scale = 1)
   colnames(Y) <- c("Y1", "Y2", "Y3", "Y4")
   
   mis <- missing_pattern(nrow(Y), 4, 1 / 5, 1 / 10)
@@ -317,7 +322,19 @@ for (di in 1:dataset_num) {
   var_est <- apply(points, 1, var)
   est <- data.frame(t(est))
   colnames(est) <- c("avg", "lower", "upper")
-  est$truth <- f_sigmoid(ages, 2, 70, 5) # spline.basis %*% coef00[3:6]
+  grid_scaled <- list(
+    (ages - 60)/6,
+    (ages - 72)/6,
+    (ages - 82)/4,
+    (ages - 60)/3.75
+  )
+  est$truth <- list(
+    2 * plogis(grid_scaled[[1]]),
+    2 * plogis(grid_scaled[[2]] * exp(0.5 * grid_scaled[[2]] / sqrt(grid_scaled[[2]]^2+1))),
+    2 * plogis(grid_scaled[[3]] * exp(1.0 * grid_scaled[[3]] / sqrt(grid_scaled[[3]]^2+1))),
+    plogis(grid_scaled[[4]], location = -4, scale = 1) +
+      plogis(grid_scaled[[4]], location = +4, scale = 1)
+  )[[true_curve]]
   est$age <- ages
   est$MSE <- (est$avg - est$truth)^2 + var_est
   est$bias2 <- (est$avg - est$truth)^2
@@ -339,7 +356,7 @@ for (di in 1:dataset_num) {
   })
   Q50[di, 1:2] <- HDInterval::hdi(density(Q50s, from = 0), credMass = ci_level, allowSplit = FALSE)
   Q50[di, 3] <- mean(Q50s)
-  true_Q50[di] <- b0
+  true_Q50[di] <- ages[min(which(est$truth >= max(est$truth) / 2))]
   Q50[di, 5] <- (Q50[di, 3] - true_Q50[di])^2
   Q50[di, 6] <- var(Q50s)
   Q50[di, 4] <- sum(Q50[di, 5:6])
