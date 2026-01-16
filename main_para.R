@@ -18,15 +18,14 @@ interval_time_exp_rate <- 20 # 1+Exp(rate)
 num_visits_mean <- ifelse(setting==3, 5, 10) # Poisson
 N_cont_covars <- 2 # N(0,1) continous covariates
 N_binary_covars <- 2
-p_binary_covars <- c(1, 0.5)
+p_binary_covars <- 0.5
 random_effect_var <- 1
 residual_var <- 0.5
 
 true_fixed_effect <- matrix(c(
-  +0.4, +0.4, +0.4, +0.4,
   -0.5, -0.5, -0.5, -0.5,
   +0.1, +0.1, +0.1, +0.1
-), nrow = 3, ncol = 4, byrow = TRUE)
+), nrow = 2, ncol = 4, byrow = TRUE)
 nX <- 3
 a0 <- 1
 b0 <- 70
@@ -91,8 +90,7 @@ for (di in 1:dataset_num) {
 
   X <- cbind(
     X1 = rbinom(N, 1, p_binary_covars[1]),
-    X2 = rbinom(N, 1, p_binary_covars[2]),
-    X3 = rnorm(N)
+    X2 = rnorm(N)
   )
   X_names <- colnames(X)
   df <- cbind(df, X[df$id, ])
