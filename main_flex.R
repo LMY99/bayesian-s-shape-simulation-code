@@ -12,7 +12,7 @@ start_time_low <- ifelse(setting==2, 30, 40)
 start_time_upper <- ifelse(setting==2, 90, 80) # Normal
 interval_time_min <- 1
 interval_time_exp_rate <- 20 # 1+Exp(rate)
-num_visits_mean <- ifelse(setting==3, 10, 15) # Poisson
+num_visits_mean <- ifelse(setting==3, 5, 10) # Poisson
 N_cont_covars <- 2 # N(0,1) continous covariates
 N_binary_covars <- 2
 p_binary_covars <- c(1, 0.5)
@@ -38,7 +38,7 @@ sd2 <- 5
 p1 <- 0.4
 p2 <- 0.6
 
-N <- ifelse(setting==3, 2000, 1000)
+N <- ifelse(setting==3, 750, 250)
 
 dataset_num <- 1
 
