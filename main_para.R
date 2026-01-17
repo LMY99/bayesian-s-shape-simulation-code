@@ -203,7 +203,7 @@ for (di in 1:dataset_num) {
     stan.array$beta[, 1, ], 2,
     function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   ))
-  CI_covariate_repeat[di, , 4] <- c(0.4, -0.5, 0.1)
+  CI_covariate_repeat[di, , 4] <- c(-0.5, 0.1)
   CI_covariate_repeat[di, , 7] <- t(apply(stan.array$beta[, 1, ], 2, var))
   CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
   CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
@@ -226,7 +226,7 @@ for (di in 1:dataset_num) {
     offsets, 2,
     function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
   ))
-  offset_repeat[di, , 4] <- truthRE[, 2] + 0.4
+  offset_repeat[di, , 4] <- truthRE[, 2] + 0.0
   offset_repeat[di, , 7] <- t(apply(offsets, 2, var))
   offset_repeat[di, , 6] <- (offset_repeat[di, , 1] - offset_repeat[di, , 4])^2
   offset_repeat[di, , 5] <- offset_repeat[di, , 6] + offset_repeat[di, , 7]
