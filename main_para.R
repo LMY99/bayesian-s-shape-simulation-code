@@ -132,7 +132,7 @@ for (di in 1:dataset_num) {
 
   K <- 1 # Number of biomarkers
   # All non-age covariates
-  X <- as.matrix(df[, c("X1", "X2", "X3")])
+  X <- as.matrix(df[, c("X1", "X2")])
   Y <- as.matrix(df[, c("Y")], ncol = K) # Biomarkers array
   y_obs <- matrix(nrow = nrow(Y), ncol = ncol(Y))
   for (i in 1:nrow(Y)) {
