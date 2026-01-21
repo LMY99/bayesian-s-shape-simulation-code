@@ -167,7 +167,23 @@ for (di in 1:dataset_num) {
     }
   }
   ci_level <- 0.95
-  est <- apply(points, 1, function(x) c(mean(x), HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE)))
+  est <- apply(points, 1, function(x) {
+    y <- c(0,0,0)
+    y[1] <- mean(x)
+    hdix <- HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE)
+    if(any(is.na(hdix))){
+      hdix1 <- c(0, quantile(x, ci_level))
+      hdix2 <- quantile(x, c(1-ci_level,1+ci_level)/2)
+      if(diff(hdix1)<diff(hdix2))
+        y[c(2,3)] <- hdix1
+      else
+        y[c(2,3)] <- hdix2
+    } else {
+      y[c(2,3)] <- hdix
+    }
+    return(y)
+  }
+  )
   var_est <- apply(points, 1, var)
   est <- data.frame(t(est))
   colnames(est) <- c("avg", "lower", "upper")
@@ -267,7 +283,6 @@ for (di in 1:dataset_num) {
     HDInterval::hdi(density(stan.array$lscale, from = 0), credMass = ci_level, allowSplit = FALSE)
   )
 }
-
 save(CI_repeat, turning, true_turning, CI_covariate_repeat, RE_repeat, offset_repeat,
   Q50, true_Q50,
   sigmay_repeat, sigmaw_repeat,
