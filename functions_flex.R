@@ -1,3 +1,31 @@
+hdi0 <- function(x) {
+  y <- c(0,0,0)
+  y[1] <- mean(x)
+  hdix <- HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE)
+  if(any(is.na(hdix))){
+    hdix1 <- c(0, quantile(x, ci_level))
+    hdix2 <- HDInterval::hdi(x, credMass = ci_level, allowSplit = FALSE)
+    if(diff(hdix1)<diff(hdix2))
+      y[c(2,3)] <- hdix1
+    else
+      y[c(2,3)] <- hdix2
+  } else {
+    y[c(2,3)] <- hdix
+  }
+  return(y)
+}
+hdi1 <- function(x) {
+  y <- c(0,0,0)
+  y[1] <- mean(x)
+  hdix <- HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE)
+  if(any(is.na(hdix))){
+    y[c(2,3)] <- HDInterval::hdi(x, credMass = ci_level, allowSplit = FALSE)
+  } else {
+    y[c(2,3)] <- hdix
+  }
+  return(y)
+}
+
 exchangable_cov <- function(main_var, re_var, block_sizes) {
   accum <- c(0, cumsum(block_sizes))
   mat <- matrix(0, max(accum), max(accum))

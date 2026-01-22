@@ -167,23 +167,7 @@ for (di in 1:dataset_num) {
     }
   }
   ci_level <- 0.95
-  est <- apply(points, 1, function(x) {
-    y <- c(0,0,0)
-    y[1] <- mean(x)
-    hdix <- HDInterval::hdi(density(x, from = 0), credMass = ci_level, allowSplit = FALSE)
-    if(any(is.na(hdix))){
-      hdix1 <- c(0, quantile(x, ci_level))
-      hdix2 <- quantile(x, c(1-ci_level,1+ci_level)/2)
-      if(diff(hdix1)<diff(hdix2))
-        y[c(2,3)] <- hdix1
-      else
-        y[c(2,3)] <- hdix2
-    } else {
-      y[c(2,3)] <- hdix
-    }
-    return(y)
-  }
-  )
+  est <- apply(points, 1, hdi0)
   var_est <- apply(points, 1, var)
   est <- data.frame(t(est))
   colnames(est) <- c("avg", "lower", "upper")
@@ -206,7 +190,7 @@ for (di in 1:dataset_num) {
   est$var <- var_est
 
   Q50s <- stan.array$lpos
-  Q50[di, 1:2] <- HDInterval::hdi(density(Q50s, from = 0), credMass = ci_level, allowSplit = FALSE)
+  Q50[di, 1:2] <- hdi0(Q50s)[2:3]
   Q50[di, 3] <- mean(Q50s)
   true_Q50[di] <- ages[min(which(est$truth >= max(est$truth) / 2))]
   Q50[di, 5] <- (Q50[di, 3] - true_Q50[di])^2
@@ -217,7 +201,7 @@ for (di in 1:dataset_num) {
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     stan.array$beta[, 1, ], 2,
-    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
+    hdi1
   ))
   CI_covariate_repeat[di, , 4] <- c(-0.5, 0.1)
   CI_covariate_repeat[di, , 7] <- t(apply(stan.array$beta[, 1, ], 2, var))
@@ -226,7 +210,7 @@ for (di in 1:dataset_num) {
 
   RE_repeat[di, , 1:3] <- t(apply(
     stan.array$randomint[, 1, ], 2,
-    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
+    hdi1
   ))
   RE_repeat[di, , 4] <- truthRE[, 2]
   RE_repeat[di, , 7] <- t(apply(stan.array$randomint[, 1, ], 2, var))
@@ -240,7 +224,7 @@ for (di in 1:dataset_num) {
 
   offset_repeat[di, , 1:3] <- t(apply(
     offsets, 2,
-    function(x) c(mean(x), HDInterval::hdi(density(x), credMass = ci_level, allowSplit = FALSE))
+    hdi1
   ))
   offset_repeat[di, , 4] <- truthRE[, 2] + 0.0
   offset_repeat[di, , 7] <- t(apply(offsets, 2, var))
@@ -248,7 +232,7 @@ for (di in 1:dataset_num) {
   offset_repeat[di, , 5] <- offset_repeat[di, , 6] + offset_repeat[di, , 7]
 
   sigmay_repeat[di, 1] <- mean(stan.array$sigmaerror)
-  sigmay_repeat[di, 2:3] <- HDInterval::hdi(density(stan.array$sigmaerror, from = 0), credMass = ci_level, allowSplit = FALSE)
+  sigmay_repeat[di, 2:3] <- hdi0(stan.array$sigmaerror)[2:3]
   sigmay_repeat[di, 4] <- residual_var
   sigmay_repeat[di, 6:7] <- c(
     (sigmay_repeat[di, 1] - sigmay_repeat[di, 4])^2,
@@ -256,7 +240,7 @@ for (di in 1:dataset_num) {
   )
   sigmay_repeat[di, 5] <- sum(sigmay_repeat[di, 6:7])
   sigmaw_repeat[di, 1] <- mean(stan.array$sigmarandom)
-  sigmaw_repeat[di, 2:3] <- HDInterval::hdi(density(stan.array$sigmarandom, from = 0), credMass = ci_level, allowSplit = FALSE)
+  sigmaw_repeat[di, 2:3] <- hdi0(stan.array$sigmarandom)[2:3]
   sigmaw_repeat[di, 4] <- random_effect_var
   sigmaw_repeat[di, 6:7] <- c(
     (sigmaw_repeat[di, 1] - sigmaw_repeat[di, 4])^2,
@@ -265,23 +249,14 @@ for (di in 1:dataset_num) {
   sigmaw_repeat[di, 5] <- sum(sigmaw_repeat[di, 6:7])
 
   true_turning[di] <- 70
-  turning[di, 1:3] <- c(
-    mean(stan.array$lpos),
-    HDInterval::hdi(density(stan.array$lpos, from = 0), credMass = ci_level, allowSplit = FALSE)
-  )
+  turning[di, 1:3] <- hdi0(stan.array$lpos)
   turning[di, 5] <- (turning[di, 1] - true_turning[di])^2
   turning[di, 6] <- var(stan.array$lpos)
   turning[di, 4] <- sum(turning[di, 5:6])
   true_amp[di] <- 2
-  amp[di, ] <- c(
-    mean(stan.array$lamp),
-    HDInterval::hdi(density(stan.array$lamp, from = 0), credMass = ci_level, allowSplit = FALSE)
-  )
+  amp[di, ] <- hdi0(stan.array$lamp)
   true_scales[di] <- 5
-  scales[di, ] <- c(
-    mean(stan.array$lscale),
-    HDInterval::hdi(density(stan.array$lscale, from = 0), credMass = ci_level, allowSplit = FALSE)
-  )
+  scales[di, ] <- hdi0(stan.array$lscale)
 }
 save(CI_repeat, turning, true_turning, CI_covariate_repeat, RE_repeat, offset_repeat,
   Q50, true_Q50,
