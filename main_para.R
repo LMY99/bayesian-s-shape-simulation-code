@@ -3,19 +3,20 @@ seed <- as.integer(args[1])
 
 set.seed(seed)
 setting <- as.integer(args[2])
-# setting = 1: baseline age [50, 70], N = 250, Poisson(10)
-# setting = 2: baseline age [35, 90], N = 250, Poisson(10)
-# setting = 3: baseline age [50, 70], N = 750, Poisson(5)
+# setting = 1: baseline age [40, 80], N = 250, Poisson(10)
+# setting = 2: baseline age [30, 90], N = 250, Poisson(10)
+# setting = 3: baseline age [40, 80], N = 750, Poisson(5)
+# setting = 4: baseline age [30, 90], N = 1000, Poisson(15)
 true_curve <- as.integer(args[3])
 source("functions_flex.R")
 
 library(rstan)
 
-start_time_low <- ifelse(setting==2, 30, 40)
-start_time_upper <- ifelse(setting==2, 90, 80) # Normal
+start_time_low <- ifelse(setting %in% c(2,4), 30, 40)
+start_time_upper <- ifelse(setting %in% c(2,4), 90, 80) # Normal
 interval_time_min <- 1
 interval_time_exp_rate <- 20 # 1+Exp(rate)
-num_visits_mean <- ifelse(setting==3, 5, 10) # Poisson
+num_visits_mean <- c(10,10,5,15)[setting] # Poisson
 N_cont_covars <- 2 # N(0,1) continous covariates
 N_binary_covars <- 2
 p_binary_covars <- 0.5
@@ -40,7 +41,7 @@ sd2 <- 5
 p1 <- 0.4
 p2 <- 0.6
 
-N <- ifelse(setting==3, 750, 250)
+N <- c(250,250,750,1000)[setting]
 
 dataset_num <- 1
 
