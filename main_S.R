@@ -30,7 +30,7 @@ true_fixed_effect <- matrix(c(
   -0.5, -0.5, -0.5, -0.5,
   +0.1, +0.1, +0.1, +0.1
 ), nrow = 2, ncol = 4, byrow = TRUE)
-nX <- 3
+nX <- 2
 a0 <- 1
 b0 <- 70
 d0 <- 4
