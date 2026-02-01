@@ -233,7 +233,7 @@ update_coef <- function(covars.list, nX, Y, RE, sy, sw, id, prior.mean, prior.pr
 
     mu <- as.vector(variance %*% mu * alpha)
     res[, , k] <- hdtg::harmonicHMC(samples, burnin, mu, chol(variance),
-      diag(length(mu))[-(1:nX), ], rep(0, length(mu) - nX),
+      diag(length(mu))[(nX+1):length(mu), ], rep(0, length(mu) - nX),
       rep(0.1, length(mu)),
       precFlg = FALSE
     )

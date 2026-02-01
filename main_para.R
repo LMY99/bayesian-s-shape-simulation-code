@@ -1,13 +1,13 @@
 args <- commandArgs(trailingOnly = TRUE)
-seed <- as.integer(args[1])
+seed <- 1#as.integer(args[1])
 
 set.seed(seed)
-setting <- as.integer(args[2])
+setting <- 1#as.integer(args[2])
 # setting = 1: baseline age [40, 80], N = 250, Poisson(10)
 # setting = 2: baseline age [30, 90], N = 250, Poisson(10)
 # setting = 3: baseline age [40, 80], N = 750, Poisson(5)
 # setting = 4: baseline age [30, 90], N = 1000, Poisson(15)
-true_curve <- as.integer(args[3])
+true_curve <- 1#as.integer(args[3])
 source("functions_flex.R")
 
 library(rstan)
@@ -20,12 +20,12 @@ num_visits_mean <- c(10,10,5,15)[setting] # Poisson
 N_cont_covars <- 2 # N(0,1) continous covariates
 N_binary_covars <- 2
 p_binary_covars <- 0.5
-random_effect_var <- 1
+random_effect_var <- 0
 residual_var <- 0.5
 
 true_fixed_effect <- matrix(c(
-  -0.5, -0.5, -0.5, -0.5,
-  +0.1, +0.1, +0.1, +0.1
+  -0.0, -0.0, -0.0, -0.0,
+  +0.0, +0.0, +0.0, +0.0
 ), nrow = 2, ncol = 4, byrow = TRUE)
 nX <- 2
 a0 <- 1
@@ -143,9 +143,9 @@ for (di in 1:dataset_num) {
   }
   Y[is.na(Y)] <- 0
   dat <- list(
-    Nobs = nrow(X), Npred = ncol(X),
+    Nobs = nrow(X),
     Nout = ncol(Y), Nind = max(df$id),
-    x = X, t = df$ageori, y = Y, y_obs = y_obs,
+    t = df$ageori, y = Y, y_obs = y_obs,
     jj = df$id
   )
 
@@ -200,37 +200,37 @@ for (di in 1:dataset_num) {
 
   CI_repeat[di, , ] <- as.matrix(est)
 
-  CI_covariate_repeat[di, , 1:3] <- t(apply(
-    stan.array$beta[, 1, ], 2,
-    hdi1
-  ))
-  CI_covariate_repeat[di, , 4] <- c(-0.5, 0.1)
-  CI_covariate_repeat[di, , 7] <- t(apply(stan.array$beta[, 1, ], 2, var))
-  CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
-  CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
+  # CI_covariate_repeat[di, , 1:3] <- t(apply(
+  #   stan.array$beta[, 1, ], 2,
+  #   hdi1
+  # ))
+  # CI_covariate_repeat[di, , 4] <- c(-0.5, 0.1)
+  # CI_covariate_repeat[di, , 7] <- t(apply(stan.array$beta[, 1, ], 2, var))
+  # CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
+  # CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
 
-  RE_repeat[di, , 1:3] <- t(apply(
-    stan.array$randomint[, 1, ], 2,
-    hdi1
-  ))
-  RE_repeat[di, , 4] <- truthRE[, 2]
-  RE_repeat[di, , 7] <- t(apply(stan.array$randomint[, 1, ], 2, var))
-  RE_repeat[di, , 6] <- (RE_repeat[di, , 1] - RE_repeat[di, , 4])^2
-  RE_repeat[di, , 5] <- RE_repeat[di, , 6] + RE_repeat[di, , 7]
+  # RE_repeat[di, , 1:3] <- t(apply(
+  #   stan.array$randomint[, 1, ], 2,
+  #   hdi1
+  # ))
+  # RE_repeat[di, , 4] <- truthRE[, 2]
+  # RE_repeat[di, , 7] <- t(apply(stan.array$randomint[, 1, ], 2, var))
+  # RE_repeat[di, , 6] <- (RE_repeat[di, , 1] - RE_repeat[di, , 4])^2
+  # RE_repeat[di, , 5] <- RE_repeat[di, , 6] + RE_repeat[di, , 7]
 
-  offsets <- stan.array$randomint[, 1, ]
-  for (j in 1:(R / 2)) {
-    offsets[j, ] <- offsets[j, ] + stan.array$beta[j, 1, 1]
-  }
+  # offsets <- stan.array$randomint[, 1, ]
+  # for (j in 1:(R / 2)) {
+  #   offsets[j, ] <- offsets[j, ] + stan.array$beta[j, 1, 1]
+  # }
 
-  offset_repeat[di, , 1:3] <- t(apply(
-    offsets, 2,
-    hdi1
-  ))
-  offset_repeat[di, , 4] <- truthRE[, 2] + 0.0
-  offset_repeat[di, , 7] <- t(apply(offsets, 2, var))
-  offset_repeat[di, , 6] <- (offset_repeat[di, , 1] - offset_repeat[di, , 4])^2
-  offset_repeat[di, , 5] <- offset_repeat[di, , 6] + offset_repeat[di, , 7]
+  # offset_repeat[di, , 1:3] <- t(apply(
+  #   offsets, 2,
+  #   hdi1
+  # ))
+  # offset_repeat[di, , 4] <- truthRE[, 2] + 0.0
+  # offset_repeat[di, , 7] <- t(apply(offsets, 2, var))
+  # offset_repeat[di, , 6] <- (offset_repeat[di, , 1] - offset_repeat[di, , 4])^2
+  # offset_repeat[di, , 5] <- offset_repeat[di, , 6] + offset_repeat[di, , 7]
 
   sigmay_repeat[di, 1] <- mean(stan.array$sigmaerror)
   sigmay_repeat[di, 2:3] <- hdi0(stan.array$sigmaerror)[2:3]
@@ -240,14 +240,14 @@ for (di in 1:dataset_num) {
     var(stan.array$sigmaerror)
   )
   sigmay_repeat[di, 5] <- sum(sigmay_repeat[di, 6:7])
-  sigmaw_repeat[di, 1] <- mean(stan.array$sigmarandom)
-  sigmaw_repeat[di, 2:3] <- hdi0(stan.array$sigmarandom)[2:3]
-  sigmaw_repeat[di, 4] <- random_effect_var
-  sigmaw_repeat[di, 6:7] <- c(
-    (sigmaw_repeat[di, 1] - sigmaw_repeat[di, 4])^2,
-    var(stan.array$sigmarandom)
-  )
-  sigmaw_repeat[di, 5] <- sum(sigmaw_repeat[di, 6:7])
+  # sigmaw_repeat[di, 1] <- mean(stan.array$sigmarandom)
+  # sigmaw_repeat[di, 2:3] <- hdi0(stan.array$sigmarandom)[2:3]
+  # sigmaw_repeat[di, 4] <- random_effect_var
+  # sigmaw_repeat[di, 6:7] <- c(
+  #   (sigmaw_repeat[di, 1] - sigmaw_repeat[di, 4])^2,
+  #   var(stan.array$sigmarandom)
+  # )
+  # sigmaw_repeat[di, 5] <- sum(sigmaw_repeat[di, 6:7])
 
   true_turning[di] <- 70
   turning[di, 1:3] <- hdi0(stan.array$lpos)

@@ -23,12 +23,12 @@ num_visits_mean <- c(10,10,5,15)[setting] # Poisson
 N_cont_covars <- 2 # N(0,1) continous covariates
 N_binary_covars <- 2
 p_binary_covars <- 0.5
-random_effect_var <- 1
+random_effect_var <- 0
 residual_var <- 0.5
 
 true_fixed_effect <- matrix(c(
-  -0.5, -0.5, -0.5, -0.5,
-  +0.1, +0.1, +0.1, +0.1
+  -0.0, -0.0, -0.0, -0.0,
+  +0.0, +0.0, +0.0, +0.0
 ), nrow = 2, ncol = 4, byrow = TRUE)
 nX <- 2
 a0 <- 1
@@ -158,7 +158,7 @@ for (di in 1:dataset_num) {
       degree = 2, intercept = TRUE
     ) # IBSpline Basis
     B <- B[, (3):(ncol(B) - 2)]
-    covar.list[[i]] <- cbind(X, B)
+    covar.list[[i]] <- B
   }
 
 
@@ -179,7 +179,7 @@ for (di in 1:dataset_num) {
     long_all_ss[i] <- sum(df$ID == i)
   }
 
-  R <- 1e4 # Set Number of Iterations
+  R <- 1e1 # Set Number of Iterations
   Burnin <- R / 2 # Set Number of Burn-ins
 
 
@@ -187,12 +187,12 @@ for (di in 1:dataset_num) {
   # Set Priors -----------------------------------------------------
   # Beta parameter: Coefficients for adjusting covariates
   beta.prior <- list(
-    mean = rep(0, ncol(X)),
-    variance = diag(ncol(X)) * 10000,
+    mean = rep(0, 0),
+    variance = diag(0) * 10000,
     # variance=10000,
     precision = NULL
   )
-  beta.prior$precision <- solve(beta.prior$variance)
+  beta.prior$precision <- diag(0)#solve(beta.prior$variance)
   # Gamma parameter: Coefficients for splines
   gamma.prior <- list(
     mean = rep(0, ncol(B)),
@@ -210,7 +210,7 @@ for (di in 1:dataset_num) {
 
   # Fixed Effect of X & All-positive Spline Coefs
   coefs <- array(0, c(ncol(covar.list[[1]]), ncol(Y), R))
-  nX <- ncol(X)
+  nX <- 0
   # Variance of Biomarkers
   sigmays <- rep(0, R)
   sigmaws <- rep(0, R)
@@ -218,11 +218,11 @@ for (di in 1:dataset_num) {
   REs <- array(0, c(dim(long_ss), R))
   offsets <- array(0, c(dim(long_ss), R))
 
-  coefs[1:nX, , 1] <-
-    t(rtmvnorm(ncol(Y),
-      mu = beta.prior$mean,
-      sigma = beta.prior$variance
-    ))
+  # coefs[1:nX, , 1] <-
+  #   t(rtmvnorm(ncol(Y),
+  #     mu = beta.prior$mean,
+  #     sigma = beta.prior$variance
+  #   ))
   coefs[(nX + 1):ncol(covar.list[[1]]), , 1] <-
     t(rtmvnorm(ncol(Y),
       mu = gamma.prior$mean,
@@ -271,10 +271,10 @@ for (di in 1:dataset_num) {
       samples = 1
     )
     coefs[, , i + 1] <- aperm(u$res, c(2, 3, 1))
-    REs[, , i + 1] <- update_W(
-      covar.list, Y, as.matrix(coefs[, , i + 1], ncol = K), long_ss,
-      df$ID, sigmays[i + 1], sigmaws[i]
-    )
+    REs[, , i + 1] <- 0 #update_W(
+    #   covar.list, Y, as.matrix(coefs[, , i + 1], ncol = K), long_ss,
+    #   df$ID, sigmays[i + 1], sigmaws[i]
+    # )
     new_pens <- update_pens(
       gamma = as.matrix(coefs[(nX + 1):ncol(covar.list[[1]]), , i + 1], ncol = 1),
       mu = gamma.prior$mean,
@@ -298,7 +298,7 @@ for (di in 1:dataset_num) {
       acc <- 0
       lss <- c(lss, ls)
     }
-    sigmaws[i + 1] <- update_sigmaw(REs[, , i + 1], 3, 0.5)
+    sigmaws[i + 1] <- 0#update_sigmaw(REs[, , i + 1], 3, 0.5)
   }
 
   for (i in 1:R) {
@@ -316,7 +316,7 @@ for (di in 1:dataset_num) {
     degree = 2, intercept = TRUE
   )
   spline.basis <- spline.basis[, 3:(dfi - 2)]
-  points <- spline.basis %*% coefs[-(1:nX), 1, indice]
+  points <- spline.basis %*% coefs[(nX+1):(dim(coefs)[1]), 1, indice]
   est <- apply(points, 1, hdi0)
   var_est <- apply(points, 1, var)
   est <- data.frame(t(est))
@@ -362,14 +362,14 @@ for (di in 1:dataset_num) {
 
   CI_repeat[di, , ] <- as.matrix(est)
 
-  CI_covariate_repeat[di, , 1:3] <- t(apply(
-    coefs[1:nX, 1, indice], 1,
-    hdi1
-  ))
-  CI_covariate_repeat[di, , 4] <- c(-0.5, 0.1)
-  CI_covariate_repeat[di, , 7] <- t(apply(coefs[1:nX, 1, indice], 1, var))
-  CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
-  CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
+  # CI_covariate_repeat[di, , 1:3] <- t(apply(
+  #   coefs[1:nX, 1, indice], 1,
+  #   hdi1
+  # ))
+  # CI_covariate_repeat[di, , 4] <- c(-0.5, 0.1)
+  # CI_covariate_repeat[di, , 7] <- t(apply(coefs[1:nX, 1, indice], 1, var))
+  # CI_covariate_repeat[di, , 6] <- (CI_covariate_repeat[di, , 1] - CI_covariate_repeat[di, , 4])^2
+  # CI_covariate_repeat[di, , 5] <- CI_covariate_repeat[di, , 6] + CI_covariate_repeat[di, , 7]
 
   RE_repeat[di, , 1:3] <- t(apply(
     REs[, , indice], 1,
