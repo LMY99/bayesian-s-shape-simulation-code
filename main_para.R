@@ -157,7 +157,7 @@ for (di in 1:dataset_num) {
   rm(stan.fit)
   gc()
 
-  ages <- seq(0, 120, by = 0.1)
+  ages <- sort(df$ageori)
   points <- array(0, c(length(ages), R / 2))
 
   est <- matrix(0, length(ages), 3)

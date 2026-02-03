@@ -290,7 +290,7 @@ for (di in 1:dataset_num) {
     }
   }
   ci_level <- 0.95
-  ages <- seq(0, 120, by = 0.1)
+  ages <- sort(df$ageori)
   points <- array(0, c(length(ages), R - Burnin))
 
   #save.image(file='test.rdata')
