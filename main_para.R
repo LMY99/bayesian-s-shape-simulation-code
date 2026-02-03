@@ -157,7 +157,7 @@ for (di in 1:dataset_num) {
   rm(stan.fit)
   gc()
 
-  ages <- sort(df$ageori)
+  ages <- c(seq(0, 120, by = 0.1), sort(df$ageori))
   points <- array(0, c(length(ages), R / 2))
 
   est <- matrix(0, length(ages), 3)
@@ -198,7 +198,7 @@ for (di in 1:dataset_num) {
   Q50[di, 6] <- var(Q50s)
   Q50[di, 4] <- sum(Q50[di, 5:6])
 
-  CI_repeat[di, , ] <- as.matrix(est)
+  CI_repeat <- as.matrix(est)
 
   # CI_covariate_repeat[di, , 1:3] <- t(apply(
   #   stan.array$beta[, 1, ], 2,
