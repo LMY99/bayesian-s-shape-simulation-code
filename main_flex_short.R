@@ -292,7 +292,7 @@ for (di in 1:dataset_num) {
     }
   }
   ci_level <- 0.95
-  ages <- seq(0, 120, by = 0.1)
+  ages <- c(seq(0, 120, by = 0.1), sort(df$ageori))
   points <- array(0, c(length(ages), R - Burnin))
 
   indice <- (Burnin + 1):R
@@ -333,7 +333,7 @@ for (di in 1:dataset_num) {
   Q50[di, 6] <- var(Q50s)
   Q50[di, 4] <- sum(Q50[di, 5:6])
 
-  CI_repeat[di, , ] <- as.matrix(est)
+  CI_repeat <- as.matrix(est)
 
   CI_covariate_repeat[di, , 1:3] <- t(apply(
     coefs[1:nX, 1, indice], 1,
