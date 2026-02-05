@@ -180,7 +180,7 @@ for (di in 1:dataset_num) {
     long_all_ss[i] <- sum(df$ID == i)
   }
 
-  R <- 1e1 # Set Number of Iterations
+  R <- 1e4 # Set Number of Iterations
   Burnin <- R / 2 # Set Number of Burn-ins
 
 

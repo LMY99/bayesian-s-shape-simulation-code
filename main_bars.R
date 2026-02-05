@@ -134,7 +134,7 @@ for (di in 1:dataset_num) {
   x0 <- df$ageori[!is.na(Y)]
   y0 <- Y[!is.na(Y)]
   y0 <- y0[order(x0)]; x0 <- x0[order(x0)]
-  out <- bars(x0, y0, prior="uniform", priorparam=c(10,30), fits=TRUE)
+  out <- bars(x0, y0, prior="poisson", priorparam=20, fits=TRUE)
   
   x0_scaled <- list(
     (x0 - 60)/6,
