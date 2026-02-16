@@ -243,7 +243,7 @@ for (di in 1:dataset_num) {
   acc <- 0 # Accepted Proposals in one batch
   lss <- ls # Sequence of LS for reference
   w <- planck_taper(ncol(B), eps = 0.1) # Window Function
-
+  w <- rep(1, ncol(B))
   M_coef <- lincon(nX + dfi - 4, nX)
   M_pen <- lincon(dfi - 4, 0)
 
