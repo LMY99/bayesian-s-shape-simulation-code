@@ -102,17 +102,13 @@ for (di in 1:dataset_num) {
   
   coef00 <- c(0, 0, c(1, 4, 7, 1) / 100, 0, 0)
   B00 <- splines2::ibs(df$ageori, knots = knot, degree = 2, intercept = TRUE, Boundary.knots = c(0, 120))
-  age_scaled <- list(
-    (df$ageori - 60)/6,
-    (df$ageori - 72)/6,
-    (df$ageori - 82)/4,
-    (df$ageori - 60)/3.75
-  )
-  Y[, 1] <- Y[, 1] + 2 * plogis(age_scaled[[1]])
-  Y[, 2] <- Y[, 2] + 2 * plogis(age_scaled[[2]] * exp(0.5 * age_scaled[[2]] / sqrt(age_scaled[[2]]^2+1)))
-  Y[, 3] <- Y[, 3] + 2 * plogis(age_scaled[[3]] * exp(1.0 * age_scaled[[3]] / sqrt(age_scaled[[3]]^2+1)))
-  Y[, 4] <- Y[, 4] + plogis(age_scaled[[4]], location = -4, scale = 1) +
-    plogis(age_scaled[[4]], location = +4, scale = 1)
+  Y[, 1] <- Y[, 1] + dual_sigmoid(df$ageori, inflect = 130-dual_sigmoid_midpoint(65,1.0,1.0,5),
+                                  height_left = 1.0, height_right = 1.0, scale_left = 5)
+  Y[, 2] <- Y[, 2] + dual_sigmoid(df$ageori, inflect = 130-dual_sigmoid_midpoint(65,1.4,0.6,5),
+                                  height_left = 1.4, height_right = 0.6, scale_left = 5)
+  Y[, 3] <- Y[, 3] + dual_sigmoid(df$ageori, inflect = 130-dual_sigmoid_midpoint(65,1.9,0.1,5),
+                                  height_left = 1.9, height_right = 0.1, scale_left = 5)
+  Y[, 4] <- Y[, 4] + plogis((df$ageori-65)/3,-4)+plogis((df$ageori-65)/3,+4)
   colnames(Y) <- c("Y1", "Y2", "Y3", "Y4")
   
   mis <- missing_pattern(nrow(Y), 4, 1 / 5, 1 / 10)
@@ -138,18 +134,14 @@ for (di in 1:dataset_num) {
   y0 <- Y[!is.na(Y)]
   y0 <- y0[order(x0)]; x0 <- x0[order(x0)]
   out <- bars(x0, y0, prior="poisson", priorparam=20, fits=TRUE)
-  
-  x0_scaled <- list(
-    (x0 - 60)/6,
-    (x0 - 72)/6,
-    (x0 - 82)/4,
-    (x0 - 60)/3.75
-  )
-  
-  if(true_curve==1) truth <- 2*plogis(x0_scaled[[1]])
-  if(true_curve==2) truth <- 2*plogis(x0_scaled[[2]]*exp(0.5*x0_scaled[[2]]/sqrt(x0_scaled[[2]]^2+1)))
-  if(true_curve==3) truth <- 2*plogis(x0_scaled[[3]]*exp(1.0*x0_scaled[[3]]/sqrt(x0_scaled[[3]]^2+1)))
-  if(true_curve==4) truth <- plogis(x0_scaled[[4]], location = -4, scale = 1) +
+
+  if(true_curve==1) truth <- dual_sigmoid(x0, inflect = 130-dual_sigmoid_midpoint(65,1.0,1.0,5),
+                                          height_left = 1.0, height_right = 1.0, scale_left = 5)
+  if(true_curve==2) truth <- dual_sigmoid(x0, inflect = 130-dual_sigmoid_midpoint(65,1.4,0.6,5),
+                                          height_left = 1.4, height_right = 0.6, scale_left = 5)
+  if(true_curve==3) truth <- dual_sigmoid(x0, inflect = 130-dual_sigmoid_midpoint(65,1.9,0.1,5),
+                                          height_left = 1.9, height_right = 0.1, scale_left = 5)
+  if(true_curve==4) truth <- plogis((x0-65)/3,-4)+plogis((x0-65)/3,+4) +
     plogis(x0_scaled[[4]], location = +4, scale = 1)
   
   
