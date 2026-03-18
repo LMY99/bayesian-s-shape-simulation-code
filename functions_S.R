@@ -1,3 +1,30 @@
+dual_sigmoid <- function(x,
+                         inflect, height_left, height_right, scale_left
+){
+  inflect <- inflect[1]
+  height_left <- height_left[1]
+  height_right <- height_right[1]
+  scale_left <- scale_left[1]
+  ifelse(x < inflect,
+         2*height_left*plogis((x-inflect)/scale_left),
+         height_left-height_right+
+           2*height_right*plogis(height_left/height_right*(x-inflect)/scale_left)
+  )
+}
+dual_sigmoid_midpoint <- function(
+    inflect, height_left, height_right, scale_left
+){
+  inflect <- inflect[1]
+  height_left <- height_left[1]
+  height_right <- height_right[1]
+  scale_left <- scale_left[1]
+  mid <- (height_left + height_right)/2
+  ifelse(height_left >= height_right,
+         qlogis(mid/2/height_left, location = inflect, scale = scale_left),
+         qlogis((mid+height_right-height_left)/2/height_right,
+                location = inflect, scale = scale_left*height_right/height_left)
+  )
+}
 hdi0 <- function(x) {
   y <- c(0,0,0)
   y[1] <- mean(x)

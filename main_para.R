@@ -103,17 +103,13 @@ for (di in 1:dataset_num) {
 
   coef00 <- c(0, 0, c(1, 4, 7, 1) / 100, 0, 0)
   B00 <- splines2::ibs(df$ageori, knots = knot, degree = 2, intercept = TRUE, Boundary.knots = c(0, 120))
-  age_scaled <- list(
-    (df$ageori - 60)/6,
-    (df$ageori - 72)/6,
-    (df$ageori - 82)/4,
-    (df$ageori - 60)/3.75
-  )
-  Y[, 1] <- Y[, 1] + 2 * plogis(age_scaled[[1]])
-  Y[, 2] <- Y[, 2] + 2 * plogis(age_scaled[[2]] * exp(0.5 * age_scaled[[2]] / sqrt(age_scaled[[2]]^2+1)))
-  Y[, 3] <- Y[, 3] + 2 * plogis(age_scaled[[3]] * exp(1.0 * age_scaled[[3]] / sqrt(age_scaled[[3]]^2+1)))
-  Y[, 4] <- Y[, 4] + plogis(age_scaled[[4]], location = -4, scale = 1) +
-    plogis(age_scaled[[4]], location = +4, scale = 1)
+  Y[, 1] <- Y[, 1] + dual_sigmoid(df$ageori, inflect = 130-dual_sigmoid_midpoint(65,1.0,1.0,5),
+                                  height_left = 1.0, height_right = 1.0, scale_left = 5)
+  Y[, 2] <- Y[, 2] + dual_sigmoid(df$ageori, inflect = 130-dual_sigmoid_midpoint(65,1.4,0.6,5),
+                                  height_left = 1.4, height_right = 0.6, scale_left = 5)
+  Y[, 3] <- Y[, 3] + dual_sigmoid(df$ageori, inflect = 130-dual_sigmoid_midpoint(65,1.9,0.1,5),
+                                  height_left = 1.9, height_right = 0.1, scale_left = 5)
+  Y[, 4] <- Y[, 4] + plogis((df$ageori-65)/3,-4)+plogis((df$ageori-65)/3,+4)
   colnames(Y) <- c("Y1", "Y2", "Y3", "Y4")
   
   mis <- missing_pattern(nrow(Y), 4, 1 / 5, 1 / 10)
@@ -172,18 +168,14 @@ for (di in 1:dataset_num) {
   var_est <- apply(points, 1, var)
   est <- data.frame(t(est))
   colnames(est) <- c("avg", "lower", "upper")
-  grid_scaled <- list(
-    (ages - 60)/6,
-    (ages - 72)/6,
-    (ages - 82)/4,
-    (ages - 60)/3.75
-  )
   est$truth <- list(
-    2 * plogis(grid_scaled[[1]]),
-    2 * plogis(grid_scaled[[2]] * exp(0.5 * grid_scaled[[2]] / sqrt(grid_scaled[[2]]^2+1))),
-    2 * plogis(grid_scaled[[3]] * exp(1.0 * grid_scaled[[3]] / sqrt(grid_scaled[[3]]^2+1))),
-    plogis(grid_scaled[[4]], location = -4, scale = 1) +
-      plogis(grid_scaled[[4]], location = +4, scale = 1)
+    dual_sigmoid(ages, inflect = 130-dual_sigmoid_midpoint(65,1.0,1.0,5),
+                 height_left = 1.0, height_right = 1.0, scale_left = 5),
+    dual_sigmoid(ages, inflect = 130-dual_sigmoid_midpoint(65,1.4,0.6,5),
+                 height_left = 1.4, height_right = 0.6, scale_left = 5),
+    dual_sigmoid(ages, inflect = 130-dual_sigmoid_midpoint(65,1.9,0.1,5),
+                 height_left = 1.9, height_right = 0.1, scale_left = 5),
+    plogis((ages-65)/3,-4)+plogis((ages-65)/3,+4)
   )[[true_curve]]
   est$age <- ages
   est$MSE <- (est$avg - est$truth)^2 + var_est
