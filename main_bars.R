@@ -141,8 +141,7 @@ for (di in 1:dataset_num) {
                                           height_left = 1.4, height_right = 0.6, scale_left = 5)
   if(true_curve==3) truth <- dual_sigmoid(x0, inflect = 130-dual_sigmoid_midpoint(65,1.9,0.1,5),
                                           height_left = 1.9, height_right = 0.1, scale_left = 5)
-  if(true_curve==4) truth <- plogis((x0-65)/3,-4)+plogis((x0-65)/3,+4) +
-    plogis(x0_scaled[[4]], location = +4, scale = 1)
+  if(true_curve==4) truth <- plogis((x0-65)/3,-4)+plogis((x0-65)/3,+4)
   
   
   system('rm bars_params bars_points samp_* summ_*')
