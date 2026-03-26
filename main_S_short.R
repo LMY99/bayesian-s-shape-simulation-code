@@ -331,7 +331,8 @@ for (di in 1:dataset_num) {
   est$var <- var_est
 
   inflects <- apply(points, 2, function(x) {
-    ages[max(which(diff(x, differences = 2) > 0)) + 1]
+    x <- x[1:1201]
+    ages[1:1201][max(which(diff(x, differences = 2) > 0)) + 1]
   })
 
   turning[di, 1:2] <- hdi0(inflects)[2:3]
