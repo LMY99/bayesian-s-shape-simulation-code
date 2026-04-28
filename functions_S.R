@@ -609,10 +609,10 @@ logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
   }
   fl <- f[, m]
   M <- max(fl, na.rm = TRUE) 
-  N0 <- sum(!is.na(f))
-  mean1 <- M + (logSumExp(f-M)-log(N0))
-  U1 <- (logSumExp((f-M)*2)-log(N0))
-  U2 <- (logSumExp(f-M)-log(N0))*2
+  N0 <- sum(!is.na(fl))
+  mean1 <- M + (logSumExp(fl-M)-log(N0))
+  U1 <- (logSumExp((fl-M)*2)-log(N0))
+  U2 <- (logSumExp(fl-M)-log(N0))*2
   error <- (U1 + log1mexp(U1 - U2) - log(N0))/2
   rel_error <- (error - mean1)
   attr(mean1, 'rel_error') <- rel_error
