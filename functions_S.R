@@ -546,6 +546,36 @@ lwmean <- function(a, b, w = 1 / 2) {
   return(colLogSumExps(mat))
 }
 
+y_dew <- function(qd,qe,w){
+  require(matrixStats)
+  ii <- (qd>0) & (qe>0)
+  t <- qd[ii]; qd[ii] <- -qe[ii]; qe[ii] <- -t
+  d <- pnorm(qd, log.p=T); e <- pnorm(qe, log.p=T)
+  d1 <- d + log(w); e1 <- e + log(1-w)
+  mat <- rbind(d1, e1)
+  res <- colLogSumExps(mat)
+  res <- qnorm(res, log.p=T)
+  res[ii] <- -res[ii]
+  return(res)
+}
+
+dpn <- function (x0, x1, log.p = FALSE) 
+{
+  require(VGAM)
+  if (any(x0 >= x1)) 
+    warning("some x0>=x1")
+  ii <- x1 > 0 & x0 > 0
+  d <- x0[ii]
+  x0[ii] <- -x1[ii]
+  x1[ii] <- -d
+  p0 <- pnorm(x0, log.p = TRUE)
+  p1 <- pnorm(x1, log.p = TRUE)
+  dp <- p1 + log1mexp(p1 - p0)
+  if (log.p == FALSE) 
+    dp <- exp(dp)
+  dp
+}
+
 logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
   require(matrixStats)
   require(VGAM)
@@ -558,53 +588,33 @@ logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
   e <- array(0, dim = c(Nmax, m))
   f <- array(0, dim = c(Nmax, m))
   y <- array(0, dim = c(Nmax, m - 1))
-  temp <- array(0, dim = c(Nmax, m - 1))
-  d[, 1] <- ifelse(a[1] == -Inf, -Inf, pnorm(a[1] / C[1, 1], log = T))
-  e[, 1] <- ifelse(b[1] == +Inf, 0, pnorm(b[1] / C[1, 1], log = T))
-  f[, 1] <- e[1, 1] + log1mexp(e[1, 1] - d[1, 1])
+  d[, 1] <- ifelse(a[1] == -Inf, -Inf, a[1]/C[1,1])
+  e[, 1] <- ifelse(b[1] == +Inf, 0, b[1]/C[1, 1])
+  f[, 1] <- mgcv::dpnorm(d[,1],e[,1],log.p=T)
   w <- array(runif((m - 1) * Nmax), dim = c(Nmax, m - 1))
   for (i in 2:m) {
-    temp[, i - 1] <- lwmean(d[, i - 1], e[, i - 1], w[, i - 1])
-    temp[temp[, i - 1] >= 0, i - 1] <- 0
-    y[, i - 1] <- qnorm(temp[, i - 1], log = T)
-    y[y[, i - 1] == +Inf, i - 1] <- 1e3
-    y[y[, i - 1] == -Inf, i - 1] <- -1e3
+    y[,i-1] <- y_dew(d[, i - 1], e[, i - 1], w[, i - 1])
     if (a[i] == -Inf) {
       d[, i] <- -Inf
     } else {
-      d[, i] <- pnorm((a[i] - colSums(C[i, 1:(i - 1)] * t(y[, 1:(i - 1)]))) / C[i, i], log = T)
+      d[, i] <- (a[i] - colSums(C[i, 1:(i - 1)] * t(y[, 1:(i - 1)]))) / C[i, i]
     }
     if (b[i] == +Inf) {
-      e[, i] <- 0
+      e[, i] <- +Inf
     } else {
-      e[, i] <- pnorm((b[i] - colSums(C[i, 1:(i - 1)] * t(y[, 1:(i - 1)]))) / C[i, i], log = T)
+      e[, i] <- (b[i] - colSums(C[i, 1:(i - 1)] * t(y[, 1:(i - 1)]))) / C[i, i]
     }
-    diff <- log1mexp(e[, i] - d[, i])
-    diff <- ifelse(diff != -Inf, diff, log1mexp(.Machine$double.xmin))
-    f[, i] <- e[, i] + diff + f[, i - 1]
+    diff <- dpn(d[,i], e[,i], log.p = T)
+    f[, i] <- diff + f[, i - 1]
   }
-  res <- logSumExp(f[, m], na.rm = TRUE) - log(sum(!is.na(f[, m])))
-  if (is.na(res) || res == -Inf) {
-    res <- (-Inf)
-    View(f)
-    View(d)
-    View(e)
-    View(y)
-    View(temp)
-    stop("Error")
-    attr(res, "rel_error") <- 0
-    return(res)
-  } else {
-    v <- cbind(f[, m], res)
-    idx <- v[, 1] < v[, 2]
-    idx[is.na(idx)] <- FALSE
-    v[idx, ] <- v[idx, c(2, 1)]
-    ad <- v[, 1] + log1mexp(v[, 1] - v[, 2])
-    ad <- ad * 2
-    var0 <- logSumExp(ad, na.rm = TRUE) - log(sum(!is.na(ad)))
-    var0 <- var0 - log(sum(!is.na(ad)))
-    sd0 <- var0 / 2
-    attr(res, "rel_error") <- exp(sd0 - res)
-  }
-  return(res)
+  fl <- f[, m]
+  M <- max(fl, na.rm = TRUE) 
+  N0 <- sum(!is.na(f))
+  mean1 <- M + (logSumExp(f-M)-log(N0))
+  U1 <- (logSumExp((f-M)*2)-log(N0))
+  U2 <- (logSumExp(f-M)-log(N0))*2
+  error <- (U1 + log1mexp(U1 - U2) - log(N0))/2
+  rel_error <- (error - mean1)
+  attr(mean1, 'rel_error') <- rel_error
+  return(mean1)
 }
