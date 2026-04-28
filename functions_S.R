@@ -589,8 +589,8 @@ logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
   f <- array(0, dim = c(Nmax, m))
   y <- array(0, dim = c(Nmax, m - 1))
   d[, 1] <- ifelse(a[1] == -Inf, -Inf, a[1]/C[1,1])
-  e[, 1] <- ifelse(b[1] == +Inf, 0, b[1]/C[1, 1])
-  f[, 1] <- mgcv::dpnorm(d[,1],e[,1],log.p=T)
+  e[, 1] <- ifelse(b[1] == +Inf, +Inf, b[1]/C[1, 1])
+  f[, 1] <- dpn(d[,1],e[,1],log.p=T)
   w <- array(runif((m - 1) * Nmax), dim = c(Nmax, m - 1))
   for (i in 2:m) {
     y[,i-1] <- y_dew(d[, i - 1], e[, i - 1], w[, i - 1])
