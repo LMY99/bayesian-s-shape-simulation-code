@@ -613,8 +613,8 @@ logpmvnorm <- function(lb, ub, mu, Sigma, Nmax = 1e3) {
   mean1 <- M + (logSumExp(fl-M)-log(N0))
   U1 <- (logSumExp((fl-M)*2)-log(N0))
   U2 <- (logSumExp(fl-M)-log(N0))*2
-  error <- (U1 + log1mexp(U1 - U2) - log(N0))/2
-  rel_error <- (error - mean1)
-  attr(mean1, 'rel_error') <- rel_error
+  error <- (U1 + log1mexp(U1 - U2) - log(N0) + log1p(1/(N0-1)) + 2 * M)/2
+  attr(mean1, 'rel_error') <- (error - mean1)
+  #save(fl, file='fl.rda')
   return(mean1)
 }
