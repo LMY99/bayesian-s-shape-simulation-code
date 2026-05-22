@@ -52,8 +52,8 @@ CI_repeat <- array(0, dim = c(dataset_num, 1201, 8))
 turning <- array(0, dim = c(dataset_num, 6))
 CI_covariate_repeat <- array(0, dim = c(dataset_num, nrow(true_fixed_effect), 7))
 true_turning <- rep(0, dataset_num)
-Q50 <- array(0, dim = c(dataset_num, 6))
-true_Q50 <- rep(0, dataset_num)
+Q25  <- array(0, dim = c(dataset_num, 6))
+true_Q25 <- rep(0, dataset_num)
 
 
 
@@ -341,16 +341,16 @@ for (di in 1:dataset_num) {
   turning[di, 5] <- (turning[di, 3] - true_turning[di])^2
   turning[di, 6] <- var(inflects)
   turning[di, 4] <- sum(turning[di, 5:6])
-
-  Q50s <- apply(points, 2, function(x) {
-    ages[min(which(x >= max(x) / 2))]
+  
+  Q25s <- apply(points, 2, function(x) {
+    ages[min(which(x >= max(x) * 0.25))]
   })
-  Q50[di, 1:2] <- hdi0(Q50s)[2:3]
-  Q50[di, 3] <- mean(Q50s)
-  true_Q50[di] <- ages[min(which(est$truth >= max(est$truth) / 2))]
-  Q50[di, 5] <- (Q50[di, 3] - true_Q50[di])^2
-  Q50[di, 6] <- var(Q50s)
-  Q50[di, 4] <- sum(Q50[di, 5:6])
+  Q25[di, 1:2] <- hdi0(Q25s)[2:3]
+  Q25[di, 3] <- mean(Q25s)
+  true_Q25[di] <- ages[min(which(est$truth >= max(est$truth) * 0.25))]
+  Q25[di, 5] <- (Q25[di, 3] - true_Q25[di])^2
+  Q25[di, 6] <- var(Q25s)
+  Q25[di, 4] <- sum(Q25[di, 5:6])
 
   CI_repeat <- as.matrix(est)
 
@@ -401,7 +401,7 @@ for (di in 1:dataset_num) {
 }
 true_turning <- b0
 save(CI_repeat, turning, true_turning, CI_covariate_repeat, RE_repeat, offset_repeat,
-  Q50, true_Q50,
+     Q50, true_Q50, Q25, true_Q25, Q75, true_Q75, Q05, true_Q05, Q95, true_Q95,
   sigmay_repeat, sigmaw_repeat,
   file = sprintf("sS_CIs_%03d_%d%d.rda", seed, setting, true_curve)
 )

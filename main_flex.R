@@ -52,8 +52,8 @@ offset_repeat <- array(0, dim = c(dataset_num, N, 7))
 
 sigmay_repeat <- array(0, dim = c(dataset_num, 7))
 sigmaw_repeat <- array(0, dim = c(dataset_num, 7))
-Q50 <- array(0, dim = c(dataset_num, 6))
-true_Q50 <- rep(0, dataset_num)
+Q25  <- array(0, dim = c(dataset_num, 6))
+true_Q25 <- rep(0, dataset_num)
 
 for (di in 1:dataset_num) {
   cat(sprintf("%d:\n ", di))
@@ -313,16 +313,16 @@ for (di in 1:dataset_num) {
   est$MSE <- (est$avg - est$truth)^2 + var_est
   est$bias2 <- (est$avg - est$truth)^2
   est$var <- var_est
-
-  Q50s <- apply(points, 2, function(x) {
-    ages[min(which(x >= max(x) / 2))]
+  
+  Q25s <- apply(points, 2, function(x) {
+    ages[min(which(x >= max(x) * 0.25))]
   })
-  Q50[di, 1:2] <- hdi0(Q50s)[2:3]
-  Q50[di, 3] <- mean(Q50s)
-  true_Q50[di] <- ages[min(which(est$truth >= max(est$truth) / 2))]
-  Q50[di, 5] <- (Q50[di, 3] - true_Q50[di])^2
-  Q50[di, 6] <- var(Q50s)
-  Q50[di, 4] <- sum(Q50[di, 5:6])
+  Q25[di, 1:2] <- hdi0(Q25s)[2:3]
+  Q25[di, 3] <- mean(Q25s)
+  true_Q25[di] <- ages[min(which(est$truth >= max(est$truth) * 0.25))]
+  Q25[di, 5] <- (Q25[di, 3] - true_Q25[di])^2
+  Q25[di, 6] <- var(Q25s)
+  Q25[di, 4] <- sum(Q25[di, 5:6])
 
   CI_repeat <- as.matrix(est)
 
@@ -373,7 +373,7 @@ for (di in 1:dataset_num) {
 }
 
 save(CI_repeat, CI_covariate_repeat, RE_repeat, offset_repeat,
-  Q50, true_Q50,
+     Q50, true_Q50, Q25, true_Q25, Q75, true_Q75, Q05, true_Q05, Q95, true_Q95,
   sigmay_repeat, sigmaw_repeat,
   file = sprintf("flex_CIs_%03d_%d%d.rda", seed, setting, true_curve)
 )
