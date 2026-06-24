@@ -149,7 +149,8 @@ for (di in 1:dataset_num) {
         truth=truth,
         mean=out$postmeans,
         lower=apply(out$sampfits,2,quantile,0.025),
-        upper=apply(out$sampfits,2,quantile,0.975)
+        upper=apply(out$sampfits,2,quantile,0.975),
+        var=apply(out$sampfits,2,var)
   )
   save(results, file=sprintf('bars_result/bars_%03d_%d%d.rda',seed,setting,true_curve))
 }
