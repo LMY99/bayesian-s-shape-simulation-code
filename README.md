@@ -5,15 +5,12 @@ This repository contains instructions and scripts used to reproduce the simulati
 ## Cloning This Repository
 
 Part of this repository is used for reproducing the simulation result table in Section 4.
-It simulates 100 datasets for five model settings for both the asymmetric and sigmoidal underlying true model.
-Codes for simulation under each model is contained within separate branches.
-To ensure normal usage of this repository, both branches need to be cloned in order to reproduce the whole result.
-The default branch corresponds to the asymmetric true model.
-A complete cloning can be done in the terminal in the following way:
+It simulates 100 datasets for six model settings for four underlying true progression curves.
+A complete cloning can be done in the terminal in the following way, where only the master branch is needed:
 ```
 git clone https://github.com/LMY99/bayesian-s-shape-simulation-code.git <some directory>
 cd <repo directory you just cloned into>
-git checkout -b sigmoid origin/sigmoid
+git checkout -b master origin/master
 ```
 For parallel computation on clusters, it is advised to clone twice onto two separate folders, and then only perform the `git checkout` clause for one of them.
 This way, two batches of datasets can be run simultaneously.
@@ -48,13 +45,7 @@ The table in the said article is generated via *Joint High Performance Computing
 For other type of job schedulers, please refer to their manuals.
 
 There are 7 bash script files that are used as SLURM batch commands in this project.
-It can be used in the following way. 
-First, go to the cloned repository and switch to one of the two branches:
-```
-cd <repo directory>
-git checkout <sigmoid or asymmetric>
-```
-Next, Run the **deploy.sh** code on the cluster to distribute the 500 jobs.
+It can be used in the following way: Run the **deploy.sh** code on the cluster to distribute the 500 jobs.
 ```
 bash deploy.sh
 ```
@@ -70,17 +61,14 @@ In the case that there are failed jobs, repeat the **deploy.sh** command. You ca
 ```
 ls *.rda | wc -l
 ```
-After 500 jobs succeeded, run
+After all jobs succeeded, run
 ```
 bash combine.sh
 ```
-to combine the **rda** files for each model into one. At this time, the individual files can be deleted via
+to combine the **rda** files for each model into two, one containing the curve summary and one containing milestones. 
+At this time, the individual files can be deleted via
 ```
 rm *_CIs_???.rda
-```
-After generating aggregated **rda** files for each truth settings (i.e. 10 combined rda files in total), download them from the cluster into your personal computer, and put them into two folders called *logit* and *asym* (or other names of your choice) under the cloned repo directory. Then run the **make_table.R** in this repository to create the table, named **table.txt**:
-```
-Rscript make_table.R
 ```
 You can change the **mother_dir** and/or **directory** variable in the script file to the respective name you choose for the folders.
 
@@ -90,9 +78,11 @@ Rscript plot_fitted.R
 ```
 where the resulting plot will appear as a PDF file **flex_diagnosis.pdf**.
 
+The R script files `plot_MSE.R` and `plot_coverage2.R` and `make_coverage2.R` are for calculating MSE and coverage probabilities using the combined files.
+
 ## Running the Code without Cluster
 
-Since there are 1000 jobs needed for reproducing the table, running the jobs sequentially is not recommended. The code below are for demonstration only or for testing the code with one seed value.
+Since there are thousands of jobs needed for reproducing the table, running the jobs sequentially is not recommended. The code below are for demonstration only or for testing the code with one seed value.
 For example, to run the parametric model simulation with select seed, run the following command in the terminal:
 ```
 Rscript main_para.R <seed>
@@ -100,7 +90,17 @@ Rscript main_para.R <seed>
 and to reproduce the result for the parametric model only, run
 ```
 # (Not Recommended)
+for setting in 1 4; do
+for curve in {1..4}; do
 for seed in {001..100}; do
-  Rscript main_para.R $seed
+  Rscript main_para.R $seed $setting $curve
 done
+done
+done
+```
+
+The BARS code are copied from the package of Wallstrom et al, which can be directly downloaded from https://www.stat.cmu.edu/~kass/bars/bars.html. 
+The version we included does not currently support running on Linux-based clusters. It is suggested to run it on windows sequentially:
+```
+bash deploy_bars.sh
 ```
